@@ -9,6 +9,11 @@ Register
 Register page:
 email
 
+Waiting for email Verification page:
+just text
+
+<Go to email, click the link to get to the next page>
+
 post-email verification page:
 first name
 last name
