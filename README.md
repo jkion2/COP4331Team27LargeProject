@@ -3,13 +3,15 @@
 Login page:
 username or email
 password
+forgotPassword
+Register
 
 Register page:
-first/last name
 email
-phone number
 
 post-email verification page:
+first name
+last name
 setusername
 setpassword
 
