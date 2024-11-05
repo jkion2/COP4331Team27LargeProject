@@ -4,6 +4,7 @@ Login page:
 username or email
 password
 forgotPassword
+Login
 Register
 
 Register page:
@@ -12,7 +13,7 @@ email
 Waiting for email Verification page:
 just text
 
-<Go to email, click the link to get to the next page>
+<Go to email, click the link to get to post-email verification page>
 
 post-email verification page:
 first name
