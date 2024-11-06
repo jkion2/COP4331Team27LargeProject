@@ -3,7 +3,7 @@ const express = require('express');
 const bodyParser = require('body-parser');
 const cors = require('cors');
 
-const url = "mongodb+srv://alvinalexabraham:alvinalexabraham@clusterteam27.uhyq1.mongodb.net/COP4331Cards?retryWrites=true&w=majority&appName=ClusterTeam27";
+const url = "mongodb+srv://alvinalexabraham:root@clusterteam27.uhyq1.mongodb.net/COP4331Cards?retryWrites=true&w=majority&appName=ClusterTeam27";
 const client = new MongoClient(url);
 
 // Initial card and user lists
