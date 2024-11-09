@@ -2,143 +2,237 @@ const MongoClient = require('mongodb').MongoClient;
 const express = require('express');
 const bodyParser = require('body-parser');
 const cors = require('cors');
+const nodemailer = require('nodemailer');
+const { ObjectId } = require('mongodb');
 
 const url = "mongodb+srv://alvinalexabraham:root@clusterteam27.uhyq1.mongodb.net/COP4331Cards?retryWrites=true&w=majority&appName=ClusterTeam27";
 const client = new MongoClient(url);
 
-// Initial card and user lists
-const cardList = [
-  'Roy Campanella', 'Paul Molitor', 'Tony Gwynn', 'Dennis Eckersley', 'Reggie Jackson',
-  'Gaylord Perry', 'Buck Leonard', 'Rollie Fingers', 'Charlie Gehringer', 'Wade Boggs',
-  'Carl Hubbell', 'Dave Winfield', 'Jackie Robinson', 'Ken Griffey, Jr.', 'Al Simmons',
-  'Chuck Klein', 'Mel Ott', 'Mark McGwire', 'Nolan Ryan', 'Ralph Kiner',
-  'Yogi Berra', 'Goose Goslin', 'Greg Maddux', 'Frankie Frisch', 'Ernie Banks',
-  'Ozzie Smith', 'Hank Greenberg', 'Kirby Puckett', 'Bob Feller', 'Dizzy Dean',
-  'Joe Jackson', 'Sam Crawford', 'Barry Bonds', 'Duke Snider', 'George Sisler',
-  'Ed Walsh', 'Tom Seaver', 'Willie Stargell', 'Bob Gibson', 'Brooks Robinson',
-  'Steve Carlton', 'Joe Medwick', 'Nap Lajoie', 'Cal Ripken, Jr.', 'Mike Schmidt',
-  'Eddie Murray', 'Tris Speaker', 'Al Kaline', 'Sandy Koufax', 'Willie Keeler',
-  'Pete Rose', 'Robin Roberts', 'Eddie Collins', 'Lefty Gomez', 'Lefty Grove',
-  'Carl Yastrzemski', 'Frank Robinson', 'Juan Marichal', 'Warren Spahn', 'Pie Traynor',
-  'Roberto Clemente', 'Harmon Killebrew', 'Satchel Paige', 'Eddie Plank', 'Josh Gibson',
-  'Oscar Charleston', 'Mickey Mantle', 'Cool Papa Bell', 'Johnny Bench', 'Mickey Cochrane',
-  'Jimmie Foxx', 'Jim Palmer', 'Cy Young', 'Eddie Mathews', 'Honus Wagner',
-  'Paul Waner', 'Grover Alexander', 'Rod Carew', 'Joe DiMaggio', 'Joe Morgan',
-  'Stan Musial', 'Bill Terry', 'Rogers Hornsby', 'Lou Brock', 'Ted Williams',
-  'Bill Dickey', 'Christy Mathewson', 'Willie McCovey', 'Lou Gehrig', 'George Brett',
-  'Hank Aaron', 'Harry Heilmann', 'Walter Johnson', 'Roger Clemens', 'Ty Cobb',
-  'Whitey Ford', 'Willie Mays', 'Rickey Henderson', 'Babe Ruth'
-];
-
-const userList = [
-  { Login: "user1", Password: "password1", FirstName: "John", LastName: "Doe", UserId: 1 },
-  { Login: "user2", Password: "password2", FirstName: "Jane", LastName: "Smith", UserId: 2 },
-  { Login: "user3", Password: "password3", FirstName: "Jim", LastName: "Brown", UserId: 3 }
-];
-
 client.connect()
-  .then(async () => {
-    console.log('Connected to MongoDB');
-
-    const db = client.db("COP4331Cards");
-
-    // Insert cards if the Cards collection is empty
-    const cardsCollection = db.collection("Cards");
-    const cardCount = await cardsCollection.countDocuments();
-    if (cardCount === 0) {
-      const cardDocuments = cardList.map(card => ({ Card: card }));
-      await cardsCollection.insertMany(cardDocuments);
-      console.log('Inserted initial card list into MongoDB');
-    } else {
-      console.log('Card list already exists in MongoDB');
-    }
-
-    // Insert users if the Users collection is empty
-    const usersCollection = db.collection("Users");
-    const userCount = await usersCollection.countDocuments();
-    if (userCount === 0) {
-      await usersCollection.insertMany(userList);
-      console.log('Inserted initial user list into MongoDB');
-    } else {
-      console.log('User list already exists in MongoDB');
-    }
-  })
-  .catch((err) => {
-    console.error('Error connecting to MongoDB', err);
-  });
+  .then(() => console.log('Connected to MongoDB'))
+  .catch((err) => console.error('Error connecting to MongoDB', err));
 
 const app = express();
 app.use(cors());
 app.use(bodyParser.json());
 
-app.use((req, res, next) => {
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PATCH, DELETE, OPTIONS');
-  next();
-});
-
-// API endpoint to add a card
-app.post('/api/addcard', async (req, res) => {
-  const { userId, card } = req.body;
-  const newCard = { Card: card, UserId: userId };
-  let error = '';
-
-  try {
-    const db = client.db("COP4331Cards");
-    const result = await db.collection('Cards').insertOne(newCard);
-    console.log('New card added:', result);
-  } catch (e) {
-    console.error('MongoDB Insert Error:', e);
-    error = e.toString();
+// Nodemailer configuration
+const transporter = nodemailer.createTransport({
+  service: 'gmail',
+  auth: {
+    user: 'your_email@gmail.com',
+    pass: 'your_password'
   }
-
-  cardList.push(card);
-  res.status(200).json({ error });
 });
 
-// API endpoint for user login
-app.post('/api/login', async (req, res) => {
-  const { login, password } = req.body;
-  let error = '';
-  let id = -1, fn = '', ln = '';
+// USER MANAGEMENT WITH EMAIL VERIFICATION
 
+// Register a new user with email verification
+app.post('/api/register', async (req, res) => {
+  const { username, email, password } = req.body;
+  const verificationCode = Math.floor(100000 + Math.random() * 900000).toString();
   try {
     const db = client.db("COP4331Cards");
-    const results = await db.collection('Users').find({ Login: login, Password: password }).toArray();
+    const result = await db.collection('Users').insertOne({ username, email, password, isVerified: false, verificationCode });
+    
+    await transporter.sendMail({
+      from: 'your_email@gmail.com',
+      to: email,
+      subject: 'Email Verification',
+      text: `Your verification code is: ${verificationCode}`
+    });
+    
+    res.status(201).json({ userId: result.insertedId, message: 'Verification email sent' });
+  } catch (e) {
+    res.status(500).json({ error: e.toString() });
+  }
+});
 
-    if (results.length > 0) {
-      id = results[0].UserId;
-      fn = results[0].FirstName;
-      ln = results[0].LastName;
+// Verify email with code
+app.post('/api/verify-email', async (req, res) => {
+  const { userId, verificationCode } = req.body;
+  try {
+    const db = client.db("COP4331Cards");
+    const user = await db.collection('Users').findOne({ _id: ObjectId(userId), verificationCode });
+
+    if (user) {
+      await db.collection('Users').updateOne({ _id: ObjectId(userId) }, { $set: { isVerified: true }, $unset: { verificationCode: "" } });
+      res.status(200).json({ message: 'Email verified successfully' });
+    } else {
+      res.status(400).json({ error: 'Invalid verification code' });
     }
   } catch (e) {
-    console.error('MongoDB Query Error:', e);
-    error = e.toString();
+    res.status(500).json({ error: e.toString() });
   }
-
-  res.status(200).json({ id, firstName: fn, lastName: ln, error });
 });
 
-// API endpoint to search cards
-app.post('/api/searchcards', async (req, res) => {
-  const { userId, search } = req.body;
-  const _search = search.trim();
-  let error = '';
-  let _ret = [];
+// CONTACT MANAGEMENT
 
+// Add a contact
+app.post('/api/contacts/add', async (req, res) => {
+  const { userId, name, email } = req.body;
   try {
     const db = client.db("COP4331Cards");
-    const results = await db.collection('Cards').find({ "Card": { $regex: _search + '.*', $options: 'i' } }).toArray();
-    _ret = results.map(result => result.Card);
+    const result = await db.collection('Contacts').insertOne({ userId, name, email });
+    res.status(201).json({ message: 'Contact added', contactId: result.insertedId });
   } catch (e) {
-    console.error('MongoDB Search Error:', e);
-    error = e.toString();
+    res.status(500).json({ error: e.toString() });
   }
-
-  res.status(200).json({ results: _ret, error });
 });
 
-app.listen(5000, () => {
-  console.log("Server is running on port 5000");
+// Delete a contact
+app.delete('/api/contacts/:id/delete', async (req, res) => {
+  const contactId = req.params.id;
+  try {
+    const db = client.db("COP4331Cards");
+    await db.collection('Contacts').deleteOne({ _id: ObjectId(contactId) });
+    res.status(200).json({ message: 'Contact deleted' });
+  } catch (e) {
+    res.status(500).json({ error: e.toString() });
+  }
 });
+
+// Edit a contact
+app.put('/api/contacts/:id/edit', async (req, res) => {
+  const contactId = req.params.id;
+  const { name, email } = req.body;
+  try {
+    const db = client.db("COP4331Cards");
+    await db.collection('Contacts').updateOne({ _id: ObjectId(contactId) }, { $set: { name, email } });
+    res.status(200).json({ message: 'Contact updated' });
+  } catch (e) {
+    res.status(500).json({ error: e.toString() });
+  }
+});
+
+// Search contacts
+app.post('/api/contacts/search', async (req, res) => {
+  const { userId, search } = req.body;
+  try {
+    const db = client.db("COP4331Cards");
+    const results = await db.collection('Contacts').find({ userId, name: { $regex: search, $options: 'i' } }).toArray();
+    res.status(200).json(results);
+  } catch (e) {
+    res.status(500).json({ error: e.toString() });
+  }
+});
+
+// EVENT MANAGEMENT WITH NOTIFICATIONS
+
+// Create an event
+app.post('/api/events/create', async (req, res) => {
+  const { title, description, date, organizerId } = req.body;
+  try {
+    const db = client.db("COP4331Cards");
+    const result = await db.collection('Events').insertOne({ title, description, date, organizerId });
+    res.status(201).json({ message: 'Event created', eventId: result.insertedId });
+  } catch (e) {
+    res.status(500).json({ error: e.toString() });
+  }
+});
+
+// Edit an event
+app.put('/api/events/:id/edit', async (req, res) => {
+  const eventId = req.params.id;
+  const { title, description, date } = req.body;
+  try {
+    const db = client.db("COP4331Cards");
+    await db.collection('Events').updateOne({ _id: ObjectId(eventId) }, { $set: { title, description, date } });
+    res.status(200).json({ message: 'Event updated' });
+  } catch (e) {
+    res.status(500).json({ error: e.toString() });
+  }
+});
+
+// Delete an event
+app.delete('/api/events/:id/delete', async (req, res) => {
+  const eventId = req.params.id;
+  try {
+    const db = client.db("COP4331Cards");
+    await db.collection('Events').deleteOne({ _id: ObjectId(eventId) });
+    res.status(200).json({ message: 'Event deleted' });
+  } catch (e) {
+    res.status(500).json({ error: e.toString() });
+  }
+});
+
+// Event invitation notification
+app.post('/api/events/:id/invite', async (req, res) => {
+  const eventId = req.params.id;
+  const { invitedUserId } = req.body;
+  try {
+    const db = client.db("COP4331Cards");
+    const event = await db.collection('Events').findOne({ _id: ObjectId(eventId) });
+    const user = await db.collection('Users').findOne({ _id: ObjectId(invitedUserId) });
+
+    if (event && user) {
+      await transporter.sendMail({
+        from: 'your_email@gmail.com',
+        to: user.email,
+        subject: `You're invited to: ${event.title}`,
+        text: `You've been invited to an event: ${event.title}.\nDate: ${event.date}\nDescription: ${event.description}`
+      });
+      res.status(200).json({ message: 'Invitation sent' });
+    } else {
+      res.status(400).json({ error: 'Event or user not found' });
+    }
+  } catch (e) {
+    res.status(500).json({ error: e.toString() });
+  }
+});
+
+// Event update notification
+app.post('/api/events/:id/notify-update', async (req, res) => {
+  const eventId = req.params.id;
+  try {
+    const db = client.db("COP4331Cards");
+    const event = await db.collection('Events').findOne({ _id: ObjectId(eventId) });
+    const attendees = await db.collection('EventResponses').find({ eventId }).toArray();
+
+    for (let attendee of attendees) {
+      const user = await db.collection('Users').findOne({ _id: ObjectId(attendee.userId) });
+      if (user) {
+        await transporter.sendMail({
+          from: 'your_email@gmail.com',
+          to: user.email,
+          subject: `Update for event: ${event.title}`,
+          text: `The event "${event.title}" has updates.\nNew Details:\n${event.description}\nDate: ${event.date}`
+        });
+      }
+    }
+    res.status(200).json({ message: 'Update notifications sent' });
+  } catch (e) {
+    res.status(500).json({ error: e.toString() });
+  }
+});
+
+// Event reminder
+app.post('/api/events/reminder', async (req, res) => {
+  try {
+    const db = client.db("COP4331Cards");
+    const upcomingEvents = await db.collection('Events').find({
+      date: { $gte: new Date(), $lte: new Date(Date.now() + 48 * 60 * 60 * 1000) }
+    }).toArray();
+
+    for (let event of upcomingEvents) {
+      const attendees = await db.collection('EventResponses').find({ eventId: event._id.toString() }).toArray();
+      
+      for (let attendee of attendees) {
+        const user = await db.collection('Users').findOne({ _id: ObjectId(attendee.userId) });
+        if (user) {
+          await transporter.sendMail({
+            from: 'your_email@gmail.com',
+            to: user.email,
+            subject: `Reminder: Upcoming Event "${event.title}"`,
+            text: `This is a reminder that the event "${event.title}" is happening soon.\nDate: ${event.date}\nDescription: ${event.description}`
+          });
+        }
+      }
+    }
+    res.status(200).json({ message: 'Reminders sent for upcoming events' });
+  } catch (e) {
+    res.status(500).json({ error: e.toString() });
+  }
+});
+
+app.listen(5000, () => console.log("Server is running on port 5000"));
