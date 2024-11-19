@@ -1,0 +1,58 @@
+# Node.js dependencies
+node_modules/
+
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+
+# Build output
+dist/
+build/
+.out/
+.next/
+
+# Cache
+.cache/
+.vscode/
+*.swp
+*.DS_Store
+.terraform/
+.venv/
+
+# Editor directories and files
+.idea/
+.vscode/
+*.swp
+*.sublime-workspace
+
+# React specific
+.eslintcache
+coverage/
+
+# Temporary files
+*.tmp
+*.lock
+*.pid
+*.seed
+*.state
+
+# OS generated files
+.DS_Store
+Thumbs.db
+
+# Dependency directories
+bower_components/
+
+# Test coverage
+coverage/
+
+# Local config files
+*.local

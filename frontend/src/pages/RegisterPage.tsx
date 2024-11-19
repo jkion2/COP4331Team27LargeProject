@@ -1,11 +1,11 @@
 import PromoPhoto from '../components/PromoPhoto.tsx';
-import Login from '../components/Login.tsx';
+import Register from '../components/Register.tsx';
 
-const LoginPage = () => {
+const RegisterPage = () => {
   return (
     <div className='flex flex-row h-screen w-screen'>
       <div className='flex-1'>
-        <Login />
+        <Register />
       </div>
       <div className='flex-1'>
         <PromoPhoto />
@@ -14,4 +14,4 @@ const LoginPage = () => {
   );
 };
 
-export default LoginPage;
+export default RegisterPage;

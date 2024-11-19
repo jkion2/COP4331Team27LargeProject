@@ -4,6 +4,7 @@ const bodyParser = require('body-parser');
 const cors = require('cors');
 const nodemailer = require('nodemailer');
 const { ObjectId } = require('mongodb');
+require('dotenv').config();
 
 const url = "mongodb+srv://alvinalexabraham:root@clusterteam27.uhyq1.mongodb.net/COP4331Cards?retryWrites=true&w=majority&appName=ClusterTeam27";
 const client = new MongoClient(url);
@@ -20,9 +21,9 @@ app.use(bodyParser.json());
 const transporter = nodemailer.createTransport({
   service: 'gmail',
   auth: {
-    user: 'your_email@gmail.com',
-    pass: 'your_password'
-  }
+    user: process.env.EMAIL,
+    pass: process.env.EMAIL_APP_PASSWORD,
+  },
 });
 
 // USER MANAGEMENT WITH EMAIL VERIFICATION
@@ -48,15 +49,22 @@ app.post('/api/register', async (req, res) => {
   }
 });
 
-// Verify email with code
 app.post('/api/verify-email', async (req, res) => {
   const { userId, verificationCode } = req.body;
   try {
-    const db = client.db("COP4331Cards");
-    const user = await db.collection('Users').findOne({ _id: ObjectId(userId), verificationCode });
+    const db = client.db('COP4331Cards');
+    // Use `new ObjectId` to create a valid ObjectId instance
+    const user = await db
+      .collection('Users')
+      .findOne({ _id: new ObjectId(userId), verificationCode });
 
     if (user) {
-      await db.collection('Users').updateOne({ _id: ObjectId(userId) }, { $set: { isVerified: true }, $unset: { verificationCode: "" } });
+      await db
+        .collection('Users')
+        .updateOne(
+          { _id: new ObjectId(userId) },
+          { $set: { isVerified: true }, $unset: { verificationCode: '' } }
+        );
       res.status(200).json({ message: 'Email verified successfully' });
     } else {
       res.status(400).json({ error: 'Invalid verification code' });
@@ -65,6 +73,37 @@ app.post('/api/verify-email', async (req, res) => {
     res.status(500).json({ error: e.toString() });
   }
 });
+
+
+// Login endpoint
+app.post('/api/login', async (req, res) => {
+  const { email, password } = req.body;
+
+  try {
+    const db = client.db("COP4331Cards");
+    const user = await db.collection('Users').findOne({ email, password });
+
+    if (!user) {
+      return res.status(400).json({ error: "Invalid email or password" });
+    }
+
+    if (!user.isVerified) {
+      return res.status(400).json({ error: "Email not verified" });
+    }
+
+    // Create a basic session object or token (for simplicity in this example)
+    const userSession = {
+      id: user._id,
+      username: user.username,
+      email: user.email,
+    };
+
+    res.status(200).json({ message: "Login successful", user: userSession });
+  } catch (e) {
+    res.status(500).json({ error: e.toString() });
+  }
+});
+
 
 // CONTACT MANAGEMENT
 
