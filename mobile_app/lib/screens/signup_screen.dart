@@ -1,44 +1,58 @@
 import 'package:flutter/material.dart';
-import 'package:mobile_app/Services/api_service.dart'; // Import ApiService
-import 'verify_screen.dart'; // Import VerifyScreen if it’s used for verified users
-import 'signup_screen.dart'; // Import SignupScreen for navigation to signup
+import 'package:mobile_app/Services/api_service.dart';
 
-class LoginScreen extends StatefulWidget {
+class SignupScreen extends StatefulWidget {
   @override
-  _LoginScreenState createState() => _LoginScreenState();
+  _SignupScreenState createState() => _SignupScreenState();
 }
 
-class _LoginScreenState extends State<LoginScreen> {
-  final TextEditingController _loginController = TextEditingController();
+class _SignupScreenState extends State<SignupScreen> {
+  final TextEditingController _nameController = TextEditingController();
+  final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
+  final TextEditingController _confirmPasswordController = TextEditingController();
   bool _isLoading = false;
 
-  Future<void> _login() async {
+  // Sign-up Function
+  Future<void> _signup() async {
+    // Basic Validation
+    if (_nameController.text.isEmpty ||
+        _emailController.text.isEmpty ||
+        _passwordController.text.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Please fill in all the fields.")),
+      );
+      return;
+    }
+
+    if (_passwordController.text != _confirmPasswordController.text) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Passwords do not match.")),
+      );
+      return;
+    }
+
     setState(() {
       _isLoading = true;
     });
 
     try {
-      final result = await ApiService.loginUser(
-        _loginController.text,
+      // Call the API Service to register the user
+      final result = await ApiService.registerUser(
+        _nameController.text,
+        _emailController.text,
         _passwordController.text,
       );
 
-      if (result['id'] != -1) {
-        // Navigate to VerifyScreen if login is successful
-        Navigator.push(
-          context,
-          MaterialPageRoute(builder: (context) => VerifyScreen()),
-        );
-      } else {
-        // Show an error message if login failed
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(result['error'])),
-        );
-      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(result['message'] ?? 'Account created! Please check your email for the verification code.')),
+      );
+
+      // Navigate to the login screen after successful registration
+      Navigator.pop(context);
     } catch (error) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Login failed: $error')),
+        SnackBar(content: Text('Sign-up failed: ${error.toString()}')),
       );
     } finally {
       setState(() {
@@ -47,6 +61,7 @@ class _LoginScreenState extends State<LoginScreen> {
     }
   }
 
+  // Build UI
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -69,7 +84,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   SizedBox(height: 100),
                   _buildHeader(),
                   SizedBox(height: 60),
-                  _buildLoginForm(context),
+                  _buildSignupForm(context),
                 ],
               ),
             ),
@@ -79,6 +94,7 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
+  // Header Widget
   Widget _buildHeader() {
     return Center(
       child: Text(
@@ -100,63 +116,33 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
-  Widget _buildLoginForm(BuildContext context) {
+  // Signup Form Widget
+  Widget _buildSignupForm(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Login to Party!',
+          'Create an Account',
           style: TextStyle(
             fontSize: 24,
             fontWeight: FontWeight.bold,
             color: Colors.white,
           ),
         ),
-        SizedBox(height: 10),
-        Row(
-          children: [
-            Text(
-              "Don’t have an account?",
-              style: TextStyle(color: Colors.white70),
-            ),
-            TextButton(
-              onPressed: () {
-                // Navigate to the signup screen
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => SignupScreen()),
-                );
-              },
-              child: Text(
-                'Sign Up',
-                style: TextStyle(color: Colors.yellowAccent),
-              ),
-            ),
-          ],
-        ),
         SizedBox(height: 20),
-        _buildTextField('Username', Icons.person, controller: _loginController),
+        _buildTextField('Full Name', Icons.person, controller: _nameController),
+        SizedBox(height: 20),
+        _buildTextField('Email Address', Icons.email, controller: _emailController),
         SizedBox(height: 20),
         _buildTextField('Password', Icons.lock, controller: _passwordController, obscureText: true),
-        SizedBox(height: 10),
-        Align(
-          alignment: Alignment.centerRight,
-          child: TextButton(
-            onPressed: () {
-              // Forgot password functionality
-            },
-            child: Text(
-              'Forgot password?',
-              style: TextStyle(color: Colors.yellowAccent),
-            ),
-          ),
-        ),
+        SizedBox(height: 20),
+        _buildTextField('Confirm Password', Icons.lock, controller: _confirmPasswordController, obscureText: true),
         SizedBox(height: 20),
         Center(
           child: _isLoading
               ? CircularProgressIndicator()
               : ElevatedButton(
-            onPressed: _login,
+            onPressed: _signup,
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.deepOrangeAccent,
               shape: RoundedRectangleBorder(
@@ -167,8 +153,20 @@ class _LoginScreenState extends State<LoginScreen> {
               shadowColor: Colors.deepOrangeAccent.withOpacity(0.5),
             ),
             child: Text(
-              'Login',
+              'Sign Up',
               style: TextStyle(fontSize: 18, color: Colors.white),
+            ),
+          ),
+        ),
+        SizedBox(height: 10),
+        Center(
+          child: TextButton(
+            onPressed: () {
+              Navigator.pop(context); // Navigate back to the login screen
+            },
+            child: Text(
+              'Already have an account? Login',
+              style: TextStyle(color: Colors.yellowAccent),
             ),
           ),
         ),
@@ -176,6 +174,7 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
+  // Text Field Builder
   Widget _buildTextField(String label, IconData icon, {required TextEditingController controller, bool obscureText = false}) {
     return TextFormField(
       controller: controller,

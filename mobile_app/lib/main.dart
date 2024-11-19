@@ -1,19 +1,22 @@
 import 'package:flutter/material.dart';
-import 'screens/login_screen.dart';  // Import the login screen file
+import 'screens/login_screen.dart'; // Import the LoginScreen
 
 void main() {
   runApp(EventifyApp());
 }
 
-class EventifyApp extends StatelessWidget {
+class MyApp extends StatelessWidget {
+  const MyApp({super.key});
+
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Eventify',
       theme: ThemeData(
-        primarySwatch: Colors.red,
+        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
+        useMaterial3: true,
       ),
-      home: LoginScreen(),  // Set LoginScreen as the home screen
+      home: LoginScreen(), // Removed 'const' from LoginScreen()
     );
   }
 }
