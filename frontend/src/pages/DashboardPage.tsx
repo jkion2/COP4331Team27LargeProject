@@ -1,8 +1,17 @@
 import Dashboard from "@/components/Dashboard";
+import CustomSidebar from "@/components/CustomSidebar";
+import { SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar';
 
-const DashboardPage = () => {
+function DashboardPage ({ children }: { children: React.ReactNode }) {
   return (
-    <div className=''>
+    <div className='w-screen'>
+      <SidebarProvider>
+        <CustomSidebar />
+        <main>
+          <SidebarTrigger />
+          {children}
+        </main>
+      </SidebarProvider>
       <Dashboard />
     </div>
   );

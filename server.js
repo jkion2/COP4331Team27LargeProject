@@ -163,7 +163,7 @@ app.post('/api/events/create', async (req, res) => {
   const { title, description, date, organizerId } = req.body;
   try {
     const db = client.db("COP4331Cards");
-    const result = await db.collection('Events').insertOne({ title, description, date, organizerId });
+    const result = await db.collection('Events').insertOne({ title, description, date, location, organizerId });
     res.status(201).json({ message: 'Event created', eventId: result.insertedId });
   } catch (e) {
     res.status(500).json({ error: e.toString() });
@@ -176,7 +176,7 @@ app.put('/api/events/:id/edit', async (req, res) => {
   const { title, description, date } = req.body;
   try {
     const db = client.db("COP4331Cards");
-    await db.collection('Events').updateOne({ _id: ObjectId(eventId) }, { $set: { title, description, date } });
+    await db.collection('Events').updateOne({ _id: ObjectId(eventId) }, { $set: { title, description, date, location } });
     res.status(200).json({ message: 'Event updated' });
   } catch (e) {
     res.status(500).json({ error: e.toString() });
