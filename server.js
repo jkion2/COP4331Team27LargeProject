@@ -33,7 +33,7 @@ app.post('/api/register', async (req, res) => {
   const { username, email, password } = req.body;
   const verificationCode = Math.floor(100000 + Math.random() * 900000).toString();
   try {
-    const db = client.db("COP4331Cards");
+    const db = client.db("LargeProjectTeam27");
     const result = await db.collection('Users').insertOne({ username, email, password, isVerified: false, verificationCode });
     
     await transporter.sendMail({
@@ -50,19 +50,19 @@ app.post('/api/register', async (req, res) => {
 });
 
 app.post('/api/verify-email', async (req, res) => {
-  const { userId, verificationCode } = req.body;
+  const {  verificationCode } = req.body;
   try {
-    const db = client.db('COP4331Cards');
+    const db = client.db('LargeProjectTeam27');
     // Use `new ObjectId` to create a valid ObjectId instance
     const user = await db
       .collection('Users')
-      .findOne({ _id: new ObjectId(userId), verificationCode });
+      .findOne({  verificationCode: verificationCode });
 
     if (user) {
       await db
         .collection('Users')
         .updateOne(
-          { _id: new ObjectId(userId) },
+          {  },
           { $set: { isVerified: true }, $unset: { verificationCode: '' } }
         );
       res.status(200).json({ message: 'Email verified successfully' });
@@ -80,7 +80,7 @@ app.post('/api/login', async (req, res) => {
   const { email, password } = req.body;
 
   try {
-    const db = client.db("COP4331Cards");
+    const db = client.db("LargeProjectTeam27");
     const user = await db.collection('Users').findOne({ email, password });
 
     if (!user) {
@@ -111,7 +111,7 @@ app.post('/api/login', async (req, res) => {
 app.post('/api/contacts/add', async (req, res) => {
   const { userId, name, email } = req.body;
   try {
-    const db = client.db("COP4331Cards");
+    const db = client.db("LargeProjectTeam27");
     const result = await db.collection('Contacts').insertOne({ userId, name, email });
     res.status(201).json({ message: 'Contact added', contactId: result.insertedId });
   } catch (e) {
@@ -123,7 +123,7 @@ app.post('/api/contacts/add', async (req, res) => {
 app.delete('/api/contacts/:id/delete', async (req, res) => {
   const contactId = req.params.id;
   try {
-    const db = client.db("COP4331Cards");
+    const db = client.db("LargeProjectTeam27");
     await db.collection('Contacts').deleteOne({ _id: ObjectId(contactId) });
     res.status(200).json({ message: 'Contact deleted' });
   } catch (e) {
@@ -136,7 +136,7 @@ app.put('/api/contacts/:id/edit', async (req, res) => {
   const contactId = req.params.id;
   const { name, email } = req.body;
   try {
-    const db = client.db("COP4331Cards");
+    const db = client.db("LargeProjectTeam27");
     await db.collection('Contacts').updateOne({ _id: ObjectId(contactId) }, { $set: { name, email } });
     res.status(200).json({ message: 'Contact updated' });
   } catch (e) {
@@ -148,7 +148,7 @@ app.put('/api/contacts/:id/edit', async (req, res) => {
 app.post('/api/contacts/search', async (req, res) => {
   const { userId, search } = req.body;
   try {
-    const db = client.db("COP4331Cards");
+    const db = client.db("LargeProjectTeam27");
     const results = await db.collection('Contacts').find({ userId, name: { $regex: search, $options: 'i' } }).toArray();
     res.status(200).json(results);
   } catch (e) {
@@ -162,7 +162,7 @@ app.post('/api/contacts/search', async (req, res) => {
 app.post('/api/events/create', async (req, res) => {
   const { title, description, date, organizerId } = req.body;
   try {
-    const db = client.db("COP4331Cards");
+    const db = client.db("LargeProjectTeam27");
     const result = await db.collection('Events').insertOne({ title, description, date, location, organizerId });
     res.status(201).json({ message: 'Event created', eventId: result.insertedId });
   } catch (e) {
@@ -175,7 +175,7 @@ app.put('/api/events/:id/edit', async (req, res) => {
   const eventId = req.params.id;
   const { title, description, date } = req.body;
   try {
-    const db = client.db("COP4331Cards");
+    const db = client.db("LargeProjectTeam27");
     await db.collection('Events').updateOne({ _id: ObjectId(eventId) }, { $set: { title, description, date, location } });
     res.status(200).json({ message: 'Event updated' });
   } catch (e) {
@@ -187,7 +187,7 @@ app.put('/api/events/:id/edit', async (req, res) => {
 app.delete('/api/events/:id/delete', async (req, res) => {
   const eventId = req.params.id;
   try {
-    const db = client.db("COP4331Cards");
+    const db = client.db("LargeProjectTeam27");
     await db.collection('Events').deleteOne({ _id: ObjectId(eventId) });
     res.status(200).json({ message: 'Event deleted' });
   } catch (e) {
@@ -200,7 +200,7 @@ app.post('/api/events/:id/invite', async (req, res) => {
   const eventId = req.params.id;
   const { invitedUserId } = req.body;
   try {
-    const db = client.db("COP4331Cards");
+    const db = client.db("LargeProjectTeam27");
     const event = await db.collection('Events').findOne({ _id: ObjectId(eventId) });
     const user = await db.collection('Users').findOne({ _id: ObjectId(invitedUserId) });
 
@@ -224,7 +224,7 @@ app.post('/api/events/:id/invite', async (req, res) => {
 app.post('/api/events/:id/notify-update', async (req, res) => {
   const eventId = req.params.id;
   try {
-    const db = client.db("COP4331Cards");
+    const db = client.db("LargeProjectTeam27");
     const event = await db.collection('Events').findOne({ _id: ObjectId(eventId) });
     const attendees = await db.collection('EventResponses').find({ eventId }).toArray();
 
@@ -248,7 +248,7 @@ app.post('/api/events/:id/notify-update', async (req, res) => {
 // Event reminder
 app.post('/api/events/reminder', async (req, res) => {
   try {
-    const db = client.db("COP4331Cards");
+    const db = client.db("LargeProjectTeam27");
     const upcomingEvents = await db.collection('Events').find({
       date: { $gte: new Date(), $lte: new Date(Date.now() + 48 * 60 * 60 * 1000) }
     }).toArray();
