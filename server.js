@@ -274,4 +274,4 @@ app.post('/api/events/reminder', async (req, res) => {
   }
 });
 
-app.listen(5079, () => console.log("Server is running on port 5079"));
+app.listen(5000, () => console.log("Server is running on port 5000"));
