@@ -14,7 +14,7 @@ function Login() {
     const js = JSON.stringify(obj);
 
     try {
-      const response = await fetch('http://localhost:5000/api/login', {
+      const response = await fetch('http://localhost:3000/api/login', {
         method: 'POST',
         body: js,
         headers: { 'Content-Type': 'application/json' },
@@ -45,10 +45,12 @@ function Login() {
   }
 
   return (
-    <div className='flex flex-col items-center justify-center gap-2 px-48 '>
-      <div className='font-modak text-8xl mt-20 text-[#98383B]'>EVENTIFY</div>
-      <h1 className='mb-6'>Login</h1>
-      <h2 className='mb-6'>
+    <div className='flex flex-col items-center justify-center gap-2 px-4 sm:px-12 md:px-24'>
+      <div className='font-modak text-6xl sm:text-7xl md:text-8xl mt-10 sm:mt-16 text-[#98383B]'>
+        EVENTIFY
+      </div>
+      <h1 className='mb-4 sm:mb-6 text-2xl sm:text-3xl'>Login</h1>
+      <h2 className='mb-4 sm:mb-6 text-center text-base sm:text-lg'>
         Don't have an account?{' '}
         <Link
           to='/'
@@ -57,13 +59,13 @@ function Login() {
           Sign up
         </Link>
       </h2>
-      <form onSubmit={doLogin} className='w-full'>
+      <form onSubmit={doLogin} className='w-full max-w-sm'>
         <Input
           type='email' // Changed to email
           placeholder='Email'
           value={loginEmail}
           onChange={handleSetLoginEmail}
-          className='mb-6 h-12 border border-black/50 rounded-2xl text-xl'
+          className='mb-4 sm:mb-6 h-10 sm:h-12 border border-black/50 rounded-2xl text-lg sm:text-xl px-4'
           required
         />
         <Input
@@ -71,18 +73,22 @@ function Login() {
           placeholder='Password'
           value={loginPassword}
           onChange={handleSetPassword}
-          className='mb-4 h-12 border border-black/50 rounded-2xl text-xl'
+          className='mb-4 h-10 sm:h-12 border border-black/50 rounded-2xl text-lg sm:text-xl px-4'
           required
         />
-        <h2 className='mb-8 text-[#B74B4B]'>Forgot password?</h2>
+        <h2 className='mb-6 text-sm sm:text-base text-[#B74B4B] text-center'>
+          Forgot password?
+        </h2>
         <Button
           type='submit'
-          className='bg-[#CC6C67] hover:bg-[#B74B4B] text-2xl w-full h-12 font-normal rounded-2xl'
+          className='bg-[#CC6C67] hover:bg-[#B74B4B] text-lg sm:text-2xl w-full h-10 sm:h-12 font-normal rounded-2xl'
         >
           Login
         </Button>
       </form>
-      {message && <p className='mt-4 text-red-600'>{message}</p>}
+      {message && (
+        <p className='mt-4 text-sm sm:text-base text-red-600'>{message}</p>
+      )}
     </div>
   );
 }

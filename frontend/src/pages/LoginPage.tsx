@@ -4,10 +4,12 @@ import Login from '../components/Login.tsx';
 const LoginPage = () => {
   return (
     <div className='flex flex-row h-screen w-screen'>
-      <div className='flex-1'>
+      {/* Login Section */}
+      <div className='flex-1 flex items-center justify-center bg-gray-100'>
         <Login />
       </div>
-      <div className='flex-1'>
+      {/* PromoPhoto Section */}
+      <div className='flex-1 flex items-center justify-center overflow-hidden'>
         <PromoPhoto />
       </div>
     </div>

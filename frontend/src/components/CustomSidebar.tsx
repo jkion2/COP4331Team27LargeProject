@@ -1,26 +1,34 @@
-import React from 'react';
-import { Link } from 'react-router-dom';
+import React, { useEffect } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import {
   Sidebar,
   SidebarHeader,
   SidebarFooter,
   SidebarContent,
-  SidebarGroup,
-  SidebarGroupLabel,
   SidebarMenu,
   SidebarMenuItem,
   SidebarMenuButton,
-  SidebarGroupContent,
 } from './ui/sidebar'; // Ensure this path matches your project
 
 function CustomSidebar() {
+  const navigate = useNavigate();
   const user = JSON.parse(localStorage.getItem('user_data') || '{}');
+
+  // Redirect to login if no user data is found
+  useEffect(() => {
+    if (!user || !user.username) {
+      navigate('/login'); // Adjust the path to your login route
+    }
+  }, [user, navigate]);
 
   return (
     <Sidebar className='bg-[#3C1517] text-white min-h-screen'>
       {/* Header */}
-      <SidebarHeader className='flex items-center justify-center py-4'>
-        <Link to='/dashboard' className='text-4xl font-bold font-modak text-[#98383B]'>
+      <SidebarHeader className='flex items-center border-b border-[#3C1517] justify-center py-4'>
+        <Link
+          to='/dashboard'
+          className='text-4xl font-bold font-modak text-[#F9ECEA]'
+        >
           EVENTIFY
         </Link>
       </SidebarHeader>
@@ -34,22 +42,14 @@ function CustomSidebar() {
               <SidebarMenuButton>Dashboard</SidebarMenuButton>
             </Link>
           </SidebarMenuItem>
-
-          {/* At a Glance (Collapsible) */}
           <SidebarMenuItem>
-            <SidebarGroup>
-              <SidebarGroupLabel>At a Glance</SidebarGroupLabel>
-              <SidebarGroupContent>
-                <SidebarMenu>
-                  <SidebarMenuItem>
-                    <SidebarMenuButton>Recent Events</SidebarMenuButton>
-                  </SidebarMenuItem>
-                  <SidebarMenuItem>
-                    <SidebarMenuButton>Notifications</SidebarMenuButton>
-                  </SidebarMenuItem>
-                </SidebarMenu>
-              </SidebarGroupContent>
-            </SidebarGroup>
+            <SidebarMenuButton>Today</SidebarMenuButton>
+          </SidebarMenuItem>
+          <SidebarMenuItem>
+            <SidebarMenuButton>Recent</SidebarMenuButton>
+          </SidebarMenuItem>
+          <SidebarMenuItem>
+            <SidebarMenuButton>Notifications</SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>
       </SidebarContent>

@@ -2,18 +2,19 @@ import Dashboard from "@/components/Dashboard";
 import CustomSidebar from "@/components/CustomSidebar";
 import { SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar';
 
-function DashboardPage ({ children }: { children: React.ReactNode }) {
+function DashboardPage() {
   return (
-    <div className='w-screen'>
+    <div className='flex w-screen h-screen relative'>
       <SidebarProvider>
         <CustomSidebar />
-        <main>
-          <SidebarTrigger />
-          {children}
-        </main>
+        <div className='flex flex-col flex-1'>
+          <SidebarTrigger className='absolute ml-2 top-2 left-auto right-auto z-20' />
+
+          <Dashboard />
+        </div>
       </SidebarProvider>
-      <Dashboard />
     </div>
   );
-};
+}
+
 export default DashboardPage;
