@@ -50,25 +50,22 @@ app.post('/api/register', async (req, res) => {
 });
 
 app.post('/api/verify-email', async (req, res) => {
-  const {  verificationCode } = req.body;
+  const { verificationCode } = req.body;
+
   try {
     const db = client.db('LargeProjectTeam27');
-    // Use `new ObjectId` to create a valid ObjectId instance
-    const user = await db
-      .collection('Users')
-      .findOne({  verificationCode: verificationCode });
+    const user = await db.collection('Users').findOne({ verificationCode });
 
-    if (user) {
-      await db
-        .collection('Users')
-        .updateOne(
-          {  },
-          { $set: { isVerified: true }, $unset: { verificationCode: '' } }
-        );
-      res.status(200).json({ message: 'Email verified successfully' });
-    } else {
-      res.status(400).json({ error: 'Invalid verification code' });
+    if (!user) {
+      return res.status(400).json({ error: 'Invalid verification code' });
     }
+
+    await db.collection('Users').updateOne(
+      { _id: user._id }, // Use the user's unique ID to ensure the correct document is updated
+      { $set: { isVerified: true }, $unset: { verificationCode: '' } } // Mark as verified and remove the verificationCode
+    );
+
+    res.status(200).json({ message: 'Email verified successfully' });
   } catch (e) {
     res.status(500).json({ error: e.toString() });
   }
@@ -80,7 +77,7 @@ app.post('/api/login', async (req, res) => {
   const { email, password } = req.body;
 
   try {
-    const db = client.db("LargeProjectTeam27");
+    const db = client.db('LargeProjectTeam27');
     const user = await db.collection('Users').findOne({ email, password });
 
     if (!user) {
@@ -91,18 +88,19 @@ app.post('/api/login', async (req, res) => {
       return res.status(400).json({ error: "Email not verified" });
     }
 
-    // Create a basic session object or token (for simplicity in this example)
-    const userSession = {
-      id: user._id,
-      username: user.username,
-      email: user.email,
-    };
-
-    res.status(200).json({ message: "Login successful", user: userSession });
+    res.status(200).json({
+      message: "Login successful",
+      user: {
+        id: user._id,
+        username: user.username,
+        email: user.email,
+      },
+    });
   } catch (e) {
     res.status(500).json({ error: e.toString() });
   }
 });
+
 
 
 // CONTACT MANAGEMENT
@@ -160,7 +158,7 @@ app.post('/api/contacts/search', async (req, res) => {
 
 // Create an event
 app.post('/api/events/create', async (req, res) => {
-  const { title, description, date, organizerId } = req.body;
+  const { title, description, date, location, organizerId } = req.body;
   try {
     const db = client.db("LargeProjectTeam27");
     const result = await db.collection('Events').insertOne({ title, description, date, location, organizerId });
@@ -168,27 +166,40 @@ app.post('/api/events/create', async (req, res) => {
   } catch (e) {
     res.status(500).json({ error: e.toString() });
   }
+  console.log('Creating event:', req.body);
 });
 
 // Edit an event
 app.put('/api/events/:id/edit', async (req, res) => {
-  const eventId = req.params.id;
-  const { title, description, date } = req.body;
+  const eventId = req.params.id; // Event ID from the request parameters
+  const { title, description, date, location } = req.body; // Extract fields from the request body
+
   try {
     const db = client.db("LargeProjectTeam27");
-    await db.collection('Events').updateOne({ _id: ObjectId(eventId) }, { $set: { title, description, date, location } });
-    res.status(200).json({ message: 'Event updated' });
+
+    // Use `new ObjectId` to create a valid MongoDB ObjectId
+    await db.collection('Events').updateOne(
+      { _id: new ObjectId(eventId) }, // Query filter
+      { $set: { title, description, date, location } } // Fields to update
+    );
+
+    res.status(200).json({ message: 'Event updated successfully' });
   } catch (e) {
     res.status(500).json({ error: e.toString() });
   }
 });
 
+
 // Delete an event
 app.delete('/api/events/:id/delete', async (req, res) => {
-  const eventId = req.params.id;
+  const eventId = req.params.id; // Event ID from the request parameters
+
   try {
     const db = client.db("LargeProjectTeam27");
-    await db.collection('Events').deleteOne({ _id: ObjectId(eventId) });
+
+    // Use `new ObjectId` to create a valid MongoDB ObjectId
+    await db.collection('Events').deleteOne({ _id: new ObjectId(eventId) });
+
     res.status(200).json({ message: 'Event deleted' });
   } catch (e) {
     res.status(500).json({ error: e.toString() });
@@ -198,27 +209,44 @@ app.delete('/api/events/:id/delete', async (req, res) => {
 // Event invitation notification
 app.post('/api/events/:id/invite', async (req, res) => {
   const eventId = req.params.id;
-  const { invitedUserId } = req.body;
+  const { recipientEmail } = req.body;
+
   try {
     const db = client.db("LargeProjectTeam27");
-    const event = await db.collection('Events').findOne({ _id: ObjectId(eventId) });
-    const user = await db.collection('Users').findOne({ _id: ObjectId(invitedUserId) });
 
-    if (event && user) {
-      await transporter.sendMail({
-        from: 'your_email@gmail.com',
-        to: user.email,
-        subject: `You're invited to: ${event.title}`,
-        text: `You've been invited to an event: ${event.title}.\nDate: ${event.date}\nDescription: ${event.description}`
-      });
-      res.status(200).json({ message: 'Invitation sent' });
-    } else {
-      res.status(400).json({ error: 'Event or user not found' });
+    // Fetch the event
+    const event = await db.collection('Events').findOne({ _id: new ObjectId(eventId) });
+    if (!event) {
+      return res.status(404).json({ error: 'Event not found' });
     }
-  } catch (e) {
-    res.status(500).json({ error: e.toString() });
+
+    // Find the recipient user
+    const recipient = await db.collection('Users').findOne({ email: recipientEmail });
+    if (!recipient) {
+      return res.status(404).json({ error: 'Recipient user not found' });
+    }
+
+    // Add the recipient to the event's sharedWith field
+    await db.collection('Events').updateOne(
+      { _id: new ObjectId(eventId) },
+      { $addToSet: { sharedWith: recipient._id.toString() } } // Ensure no duplicates
+    );
+
+    // Send the email invite
+    await transporter.sendMail({
+      from: process.env.EMAIL,
+      to: recipientEmail,
+      subject: `You're invited to: ${event.title}`,
+      text: `You are invited to the event "${event.title}".\nDate: ${event.date}\nLocation: ${event.location}\nDetails: ${event.description}`,
+    });
+
+    res.status(200).json({ message: 'Invitation sent and user associated with the event!' });
+  } catch (err) {
+    console.error('Error in invite endpoint:', err);
+    res.status(500).json({ error: err.message });
   }
 });
+
 
 // Event update notification
 app.post('/api/events/:id/notify-update', async (req, res) => {
@@ -244,6 +272,35 @@ app.post('/api/events/:id/notify-update', async (req, res) => {
     res.status(500).json({ error: e.toString() });
   }
 });
+
+// Fetch all or filtered events
+app.get('/api/events', async (req, res) => {
+  const { userId, dateFilter } = req.query;
+  if (!userId) return res.status(400).json({ error: 'Missing userId parameter' });
+
+  const filter = {
+    $or: [
+      { organizerId: userId }, // User is the organizer
+      { sharedWith: userId },  // User is invited
+    ],
+  };
+
+  if (dateFilter === 'upcoming') {
+    filter.date = { $gte: new Date() }; // Upcoming events
+  } else if (dateFilter === 'past') {
+    filter.date = { $lt: new Date() }; // Past events
+  }
+
+  try {
+    const db = client.db("LargeProjectTeam27");
+    const events = await db.collection('Events').find(filter).toArray();
+    res.status(200).json(events);
+  } catch (error) {
+    console.error('Error fetching events:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 
 // Event reminder
 app.post('/api/events/reminder', async (req, res) => {
@@ -274,4 +331,4 @@ app.post('/api/events/reminder', async (req, res) => {
   }
 });
 
-app.listen(5000, () => console.log("Server is running on port 5000"));
+app.listen(3000, () => console.log("Server is running on port 3000"));
