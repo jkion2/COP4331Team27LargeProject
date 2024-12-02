@@ -2,15 +2,17 @@ import React, { useState } from 'react';
 import { Input } from './ui/input';
 import { Button } from './ui/button';
 import { Link } from 'react-router-dom';
+import { EyeIcon, EyeOffIcon } from 'lucide-react';
 
 function Login() {
   const [message, setMessage] = useState('');
-  const [loginEmail, setLoginEmail] = React.useState(''); // Renamed for email
+  const [loginEmail, setLoginEmail] = React.useState('');
   const [loginPassword, setPassword] = React.useState('');
+  const [showPassword, setShowPassword] = useState(false); // State for toggling password visibility
 
   async function doLogin(event: any): Promise<void> {
     event.preventDefault();
-    const obj = { email: loginEmail, password: loginPassword }; // Use email instead of login
+    const obj = { email: loginEmail, password: loginPassword };
     const js = JSON.stringify(obj);
 
     try {
@@ -26,7 +28,6 @@ function Login() {
         setMessage('Email/Password combination incorrect');
       } else {
         localStorage.setItem('user_data', JSON.stringify(res.user));
-
         setMessage('');
         window.location.href = '/dashboard';
       }
@@ -61,21 +62,35 @@ function Login() {
       </h2>
       <form onSubmit={doLogin} className='w-full max-w-sm'>
         <Input
-          type='email' // Changed to email
+          type='email'
           placeholder='Email'
           value={loginEmail}
           onChange={handleSetLoginEmail}
           className='mb-4 sm:mb-6 h-10 sm:h-12 border border-black/50 rounded-2xl text-lg sm:text-xl px-4'
           required
         />
-        <Input
-          type='password'
-          placeholder='Password'
-          value={loginPassword}
-          onChange={handleSetPassword}
-          className='mb-4 h-10 sm:h-12 border border-black/50 rounded-2xl text-lg sm:text-xl px-4'
-          required
-        />
+        <div className='relative'>
+          <Input
+            type={showPassword ? 'text' : 'password'}
+            placeholder='Password'
+            value={loginPassword}
+            onChange={handleSetPassword}
+            className='mb-4 h-10 sm:h-12 border border-black/50 rounded-2xl text-lg sm:text-xl px-4 pr-10'
+            required
+          />
+          <button
+            type='button'
+            onClick={() => setShowPassword(!showPassword)}
+            className='absolute inset-y-0 right-3 flex bg-transparent items-center'
+            aria-label='Toggle password visibility'
+          >
+            {showPassword ? (
+              <EyeIcon className='w-5 h-5' />
+            ) : (
+              <EyeOffIcon className='w-5 h-5' />
+            )}
+          </button>
+        </div>
         <h2 className='mb-6 text-sm sm:text-base text-[#B74B4B] text-center'>
           Forgot password?
         </h2>

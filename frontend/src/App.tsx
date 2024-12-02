@@ -4,6 +4,8 @@ import LoginPage from './pages/LoginPage';
 import CardPage from './pages/CardPage';
 import RegisterPage from './pages/RegisterPage';
 import DashboardPage from './pages/DashboardPage';
+import EventPage from './pages/EventPage';
+import DayViewPage from './pages/DayViewPage';
 
 function App() {
 return (
@@ -13,6 +15,8 @@ return (
       <Route path='/' element={<RegisterPage />} />
       <Route path='/cards' element={<CardPage />} />
       <Route path='/dashboard' element={<DashboardPage />} />
+      <Route path='/event/:eventId' element={<EventPage />} />
+      <Route path='/day-view/:date' element={<DayViewPage />} />
     </Routes>
   </Router>
 );

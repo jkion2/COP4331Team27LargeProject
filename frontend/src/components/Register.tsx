@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Input } from './ui/input';
 import { Button } from './ui/button';
 import { Link } from 'react-router-dom';
+import { EyeIcon, EyeOffIcon } from 'lucide-react';
 import VerifyEmail from './VerifyEmail';
 
 function Register() {
@@ -13,6 +14,8 @@ function Register() {
   const [passwordMatch, setPasswordMatch] = useState(true);
   const [step, setStep] = useState('register');
   const [userId, setUserId] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   const passwordCriteria = {
     length: /.{8,}/,
@@ -127,16 +130,30 @@ function Register() {
           required
         />
 
-        <Input
-          type='password'
-          placeholder='Password'
-          value={password}
-          onChange={handleSetPassword}
-          className={`${
-            password ? 'mb-2' : 'mb-4 sm:mb-6'
-          } h-10 sm:h-12 border border-black/50 rounded-2xl text-lg sm:text-xl px-4`}
-          required
-        />
+        <div className='relative'>
+          <Input
+            type={showPassword ? 'text' : 'password'}
+            placeholder='Password'
+            value={password}
+            onChange={handleSetPassword}
+            className={`${
+              password ? 'mb-2' : 'mb-4 sm:mb-6'
+            } h-10 sm:h-12 border border-black/50 rounded-2xl text-lg sm:text-xl px-4 pr-10`}
+            required
+          />
+          <button
+            type='button'
+            onClick={() => setShowPassword(!showPassword)}
+            className='absolute inset-y-0 right-3 flex bg-transparent items-center'
+            aria-label='Toggle password visibility'
+          >
+            {showPassword ? (
+              <EyeIcon className='w-5 h-5' />
+            ) : (
+              <EyeOffIcon className='w-5 h-5' />
+            )}
+          </button>
+        </div>
         {password && (
           <ul className='mb-4 text-sm'>
             <li
@@ -170,14 +187,28 @@ function Register() {
           </ul>
         )}
 
-        <Input
-          type='password'
-          placeholder='Confirm Password'
-          value={confirmPassword}
-          onChange={handleSetConfirmPassword}
-          className='mb-2 sm:mb-4 h-10 sm:h-12 border border-black/50 rounded-2xl text-lg sm:text-xl px-4'
-          required
-        />
+        <div className='relative'>
+          <Input
+            type={showConfirmPassword ? 'text' : 'password'}
+            placeholder='Confirm Password'
+            value={confirmPassword}
+            onChange={handleSetConfirmPassword}
+            className='mb-2 sm:mb-4 h-10 sm:h-12 border border-black/50 rounded-2xl text-lg sm:text-xl px-4 pr-10'
+            required
+          />
+          <button
+            type='button'
+            onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+            className='absolute inset-y-0 right-3 bg-transparent flex items-center'
+            aria-label='Toggle confirm password visibility'
+          >
+            {showConfirmPassword ? (
+              <EyeIcon className='w-5 h-5' />
+            ) : (
+              <EyeOffIcon className='w-5 h-5' />
+            )}
+          </button>
+        </div>
         <p
           className={`text-sm mb-4 ${
             passwordMatch ? 'text-green-600' : 'text-red-600'
