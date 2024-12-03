@@ -54,7 +54,7 @@ function Dashboard() {
     setIsRefreshing(true);
     try {
       const response = await fetch(
-        `http://localhost:3000/api/events?userId=${user.id}`
+        `http://event-ify.xyz/api/events?userId=${user.id}`
       );
       if (!response.ok) {
         throw new Error('Failed to fetch events');
@@ -122,7 +122,7 @@ function Dashboard() {
 
   const handleCreateEvent = async (data) => {
     try {
-      const response = await fetch('http://localhost:3000/api/events/create', {
+      const response = await fetch('http://event-ify.xyz/api/events/create', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -170,7 +170,7 @@ function Dashboard() {
     for (const email of emails) {
       try {
         const response = await fetch(
-          `http://localhost:3000/api/events/${eventId}/invite`,
+          `http://event-ify.xyz/api/events/${eventId}/invite`,
           {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },

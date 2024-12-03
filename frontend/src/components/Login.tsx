@@ -16,7 +16,7 @@ function Login() {
     const js = JSON.stringify(obj);
 
     try {
-      const response = await fetch('http://localhost:3000/api/login', {
+      const response = await fetch('http://event-ify.xyz/api/login', {
         method: 'POST',
         body: js,
         headers: { 'Content-Type': 'application/json' },

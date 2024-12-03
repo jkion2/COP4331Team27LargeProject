@@ -43,7 +43,7 @@ function VerifyEmail({ userId, email }: { userId: string; email: string }) {
     }
 
     try {
-      const response = await fetch('http://localhost:3000/api/verify-email', {
+      const response = await fetch('http://event-ify.xyz/api/verify-email', {
         method: 'POST',
         body: JSON.stringify({ userId, verificationCode }),
         headers: { 'Content-Type': 'application/json' },
