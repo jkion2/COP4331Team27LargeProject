@@ -8,7 +8,7 @@ import {
   CardContent,
 } from './ui/card';
 
-const EventCard = ({ event }) => {
+const EventCard = ({ event, variant = 'default' }) => {
   const navigate = useNavigate();
   const { _id, image, title, location, date } = event;
 
@@ -20,32 +20,41 @@ const EventCard = ({ event }) => {
     const updatedRecents = [
       { _id, title }, // Add the new event
       ...recentEvents.filter((e) => e._id !== _id), // Remove duplicates
-    ].slice(0, 5); // Keep only the latest 5
+    ].slice(0, 10); // Keep only the latest
 
     localStorage.setItem('recent_events', JSON.stringify(updatedRecents));
     navigate(`/event/${_id}`); // Navigate to the event details page
   };
 
+  // Classes for different variants
+  const variants = {
+    default: {
+      card: 'w-full max-w-sm border bg-[#f9e9e6] border-[#3C1517] shadow-md rounded-lg cursor-pointer',
+      image: 'w-full h-48 object-cover rounded-t-lg',
+      title: 'text-2xl font-semibold',
+      description: 'text-lg text-gray-600',
+    },
+    small: {
+      card: 'w-full max-w-xs border bg-[#f9e9e6] border-[#3C1517] shadow-sm rounded-md cursor-pointer',
+      image: 'w-full h-32 object-cover rounded-t-md',
+      title: 'text-xl font-semibold',
+      description: 'text-sm text-gray-600',
+    },
+  };
+
+  const styles = variants[variant] || variants.default;
+
   return (
-    <Card
-      className='w-full max-w-sm border bg-[#f9e9e6] border-[#3C1517] shadow-md rounded-lg cursor-pointer'
-      onClick={handleClick}
-    >
+    <Card className={styles.card} onClick={handleClick}>
       <CardHeader className='p-0'>
-        {image && (
-          <img
-            src={image}
-            alt={title}
-            className='w-full h-48 object-cover rounded-t-lg'
-          />
-        )}
+        {image && <img src={image} alt={title} className={styles.image} />}
       </CardHeader>
       <CardContent className='p-3 rounded-b-lg'>
-        <CardTitle className='text-2xl font-semibold'>{title}</CardTitle>
-        <CardDescription className='text-lg text-gray-600'>
+        <CardTitle className={styles.title}>{title}</CardTitle>
+        <CardDescription className={styles.description}>
           Location: {location}
         </CardDescription>
-        <CardDescription className='text-lg text-gray-600'>
+        <CardDescription className={styles.description}>
           Date: {new Date(date).toLocaleString()}
         </CardDescription>
       </CardContent>

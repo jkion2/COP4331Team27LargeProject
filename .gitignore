@@ -21,6 +21,7 @@ build/
 
 # Cache
 .cache/
+jest-cache/
 .vscode/
 *.swp
 *.DS_Store
@@ -53,6 +54,13 @@ bower_components/
 
 # Test coverage
 coverage/
+
+# Test-specific files and directories
+**/__snapshots__/
+*.snap
+jest-cache/
+*.test-results.json
+*.test.tmp
 
 # Local config files
 *.local

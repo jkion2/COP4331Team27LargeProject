@@ -134,10 +134,7 @@ function CustomSidebar() {
             </Collapsible>
           </SidebarMenuItem>
 
-          {/* Notifications Link */}
-          <SidebarMenuItem>
-            <SidebarMenuButton>Notifications</SidebarMenuButton>
-          </SidebarMenuItem>
+         
         </SidebarMenu>
       </SidebarContent>
 

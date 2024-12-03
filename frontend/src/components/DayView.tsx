@@ -46,7 +46,7 @@ const DayView = ({ date }) => {
   // Helper to calculate vertical position
   const calculatePosition = (time) => {
     const [hours, minutes] = time.split(':').map(Number);
-    return (hours + minutes / 60) * 50; // 50px per hour
+    return (hours + minutes / 60) * 60; // 50px per hour
   };
 
   return (
@@ -72,7 +72,7 @@ const DayView = ({ date }) => {
             <div
               key={hour}
               className='relative flex items-center'
-              style={{ top: `${hour * 50}px` }} // Position each hour
+              style={{ top: `${hour * 60}px` }} // Position each hour
             >
               <div className='absolute left-0 text-gray-500 text-sm -translate-y-1/2'>
                 {hour === 0
@@ -87,7 +87,7 @@ const DayView = ({ date }) => {
           ))}
 
           {/* Events */}
-          {events.map((event, index) => {
+          {events.map((event) => {
             const eventTime = new Date(event.date).toLocaleTimeString('en-US', {
               hour: '2-digit',
               minute: '2-digit',
@@ -101,11 +101,13 @@ const DayView = ({ date }) => {
                 className='absolute'
                 style={{
                   top: `${topPosition}px`,
-                  left: index % 2 === 0 ? '10%' : '60%', // Alternate sides
-                  width: '30%',
+                  left: '10%', // Fixed position for all cards
+                  width: '70%', // Smaller width
                 }}
               >
-                <EventCard event={event} />
+                <div className='p-2 bg-white border rounded-md shadow-md'>
+                  <EventCard event={event} variant='small' />
+                </div>
               </div>
             );
           })}

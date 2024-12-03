@@ -21,6 +21,7 @@ const EventDetails = () => {
   const [event, setEvent] = useState(null);
   const [isEditing, setIsEditing] = useState(false);
   const [editedEvent, setEditedEvent] = useState({});
+  const [currentEmail, setCurrentEmail] = useState('');
 
   useEffect(() => {
     const fetchEvent = async () => {
@@ -32,7 +33,7 @@ const EventDetails = () => {
 
         const data = await response.json();
         setEvent(data);
-        setEditedEvent(data); // Initialize editable fields
+        setEditedEvent({ ...data, attendees: data.attendees || [] }); // Ensure attendees is an array
       } catch (error) {
         console.error('Error fetching event details:', error);
       }
@@ -43,9 +44,41 @@ const EventDetails = () => {
 
   const user = JSON.parse(localStorage.getItem('user_data') || '{}');
 
-  const handleEdit = async () => {
+  const handleAddAttendee = async (email) => {
     try {
       const response = await fetch(
+        `http://localhost:3000/api/events/${eventId}/invite`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ recipientEmail: email }),
+        }
+      );
+
+      if (!response.ok) throw new Error(`Failed to invite ${email}`);
+
+      const result = await response.json();
+      toast.success(`Invite sent to ${email}`, {
+        style: { color: '#065f46', border: '1px solid #10b981' },
+      });
+
+      // Update attendees in the edited event
+      setEditedEvent((prev) => ({
+        ...prev,
+        attendees: [...(prev.attendees || []), { email }],
+      }));
+    } catch (error) {
+      console.error('Error inviting attendee:', error);
+      toast.error(`Failed to invite ${email}. Please try again.`, {
+        style: { color: '#b91c1c', border: '1px solid #f87171' },
+      });
+    }
+  };
+
+  const handleEdit = async () => {
+    try {
+      // Update the event
+      const updateResponse = await fetch(
         `http://localhost:3000/api/events/${eventId}/edit`,
         {
           method: 'PUT',
@@ -56,37 +89,37 @@ const EventDetails = () => {
             date: editedEvent.date,
             location: editedEvent.location,
             image: editedEvent.image,
+            attendees: editedEvent.attendees, // Include updated attendees
           }),
         }
       );
 
-      if (!response.ok) {
-        throw new Error('Failed to edit event');
-      }
+      if (!updateResponse.ok) throw new Error('Failed to edit event');
 
-      // Notify attendees
-      await fetch(`http://localhost:3000/api/events/${eventId}/notify-update`, {
-        method: 'POST',
+      // Notify attendees about the update
+      const notifyResponse = await fetch(
+        `http://localhost:3000/api/events/${eventId}/notify-update`,
+        {
+          method: 'POST',
+        }
+      );
+
+      if (!notifyResponse.ok) throw new Error('Failed to notify attendees');
+
+      toast.success(`Event updated and attendees notified!`, {
+        style: { color: '#065f46', border: '1px solid #10b981' },
       });
 
-      toast.success(`Event updated successfully!`, {
-           style: {
-            color: '#065f46', // Dark green text
-            border: '1px solid #10b981', // Green border
-          },
-      });
       setIsEditing(false);
       setEvent(editedEvent); // Update displayed event data
     } catch (error) {
       console.error('Error editing event:', error);
       toast.error(`Failed to update event. Please try again.`, {
-        style: {
-          color: '#b91c1c', // Dark red text
-          border: '1px solid #f87171', // Red border
-        },
+        style: { color: '#b91c1c', border: '1px solid #f87171' },
       });
     }
   };
+
 
   const handleDelete = async () => {
     try {
@@ -97,24 +130,16 @@ const EventDetails = () => {
         }
       );
 
-      if (!response.ok) {
-        throw new Error('Failed to delete event');
-      }
+      if (!response.ok) throw new Error('Failed to delete event');
 
       toast.success(`Event deleted successfully!`, {
-        style: {
-          color: '#065f46', // Dark green text
-          border: '1px solid #10b981', // Green border
-        },
+        style: { color: '#065f46', border: '1px solid #10b981' },
       });
       navigate('/dashboard'); // Redirect to dashboard
     } catch (error) {
       console.error('Error deleting event:', error);
       toast.error(`Failed to delete event. Please try again.`, {
-        style: {
-          color: '#b91c1c', // Dark red text
-          border: '1px solid #f87171', // Red border
-        },
+        style: { color: '#b91c1c', border: '1px solid #f87171' },
       });
     }
   };
@@ -129,7 +154,6 @@ const EventDetails = () => {
   return (
     <div className='p-6 bg-gray-100 flex flex-col items-center'>
       <Toaster />
-
       {/* Event Image */}
       {isEditing ? (
         <div className='flex flex-col mb-4'>
@@ -141,14 +165,10 @@ const EventDetails = () => {
               const file = e.target.files[0];
               if (file) {
                 const base64Image = await toBase64(file);
-                setEditedEvent({
-                  ...editedEvent,
-                  image: base64Image, // Save as base64 string
-                });
+                setEditedEvent((prev) => ({ ...prev, image: base64Image }));
               }
             }}
           />
-          {/* Preview the selected image */}
           {editedEvent.image && (
             <img
               src={editedEvent.image}
@@ -177,7 +197,7 @@ const EventDetails = () => {
             <Input
               value={editedEvent.title}
               onChange={(e) =>
-                setEditedEvent({ ...editedEvent, title: e.target.value })
+                setEditedEvent((prev) => ({ ...prev, title: e.target.value }))
               }
             />
           </div>
@@ -259,16 +279,74 @@ const EventDetails = () => {
           )}
         </div>
       </div>
-
-      {/* Attendees Section */}
-      <div className='w-full max-w-4xl bg-white p-6 rounded-lg shadow-lg'>
+      {/* Attendees Management */}
+      <div className='w-full max-w-4xl bg-white p-6 rounded-lg shadow-lg mt-6'>
         <h2 className='text-2xl font-semibold text-[#3C1517] mb-4'>
           Attendees
         </h2>
-        {attendees?.length > 0 ? (
+        {isEditing ? (
+          <>
+            <div className='space-y-4'>
+              <label htmlFor='invite-emails' className='text-xl font-semibold'>
+                Manage Attendees
+              </label>
+              <div className='flex items-center space-x-2'>
+                <input
+                  id='invite-emails'
+                  type='email'
+                  placeholder="Enter user's email"
+                  className='w-full bg-gray-200 p-2 rounded-md'
+                  value={currentEmail}
+                  onChange={(e) => setCurrentEmail(e.target.value)}
+                />
+                <Button
+                  type='button'
+                  className='bg-[#4d1a1c] text-white'
+                  onClick={() => {
+                    if (
+                      currentEmail &&
+                      !editedEvent.attendees.find(
+                        (attendee) => attendee.email === currentEmail
+                      )
+                    ) {
+                      handleAddAttendee(currentEmail);
+                      setCurrentEmail('');
+                    }
+                  }}
+                >
+                  Add
+                </Button>
+              </div>
+              <ul className='space-y-2'>
+                {editedEvent.attendees?.map((attendee) => (
+                  <li
+                    key={attendee.email}
+                    className='flex justify-between items-center text-lg'
+                  >
+                    <span>{attendee.email}</span>
+                    <Button
+                      variant='ghost'
+                      size='sm'
+                      onClick={() =>
+                        setEditedEvent((prev) => ({
+                          ...prev,
+                          attendees: prev.attendees.filter(
+                            (a) => a.email !== attendee.email
+                          ),
+                        }))
+                      }
+                    >
+                      Remove
+                    </Button>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </>
+        ) : attendees?.length > 0 ? (
           <ul className='list-disc pl-5 text-lg text-gray-600'>
             {attendees.map((attendee) => (
-              <li key={attendee._id}>
+              <li key={attendee.email}>
                 {attendee.username} ({attendee.email})
               </li>
             ))}
@@ -277,6 +355,7 @@ const EventDetails = () => {
           <p className='text-gray-600'>No attendees yet.</p>
         )}
       </div>
+      <ScrollArea />
 
       {/* Edit/Delete Buttons */}
       {isOwner && (
@@ -284,18 +363,9 @@ const EventDetails = () => {
           {!isEditing ? (
             <Button
               onClick={() => setIsEditing(true)}
-              className='hover:bg-muted-foreground bg-accent-foreground text-white flex items-center gap-2'
+              className='hover:bg-muted-foreground bg-accent-foreground text-white'
             >
               Edit
-              <svg
-                xmlns='http://www.w3.org/2000/svg'
-                className='h-5 w-5'
-                fill='currentColor'
-                viewBox='0 0 24 24'
-              >
-                <path d='M21.731 2.269a2.625 2.625 0 0 0-3.712 0l-1.157 1.157 3.712 3.712 1.157-1.157a2.625 2.625 0 0 0 0-3.712ZM19.513 8.199l-3.712-3.712-8.4 8.4a5.25 5.25 0 0 0-1.32 2.214l-.8 2.685a.75.75 0 0 0 .933.933l2.685-.8a5.25 5.25 0 0 0 2.214-1.32l8.4-8.4Z' />
-                <path d='M5.25 5.25a3 3 0 0 0-3 3v10.5a3 3 0 0 0 3 3h10.5a3 3 0 0 0 3-3V13.5a.75.75 0 0 0-1.5 0v5.25a1.5 1.5 0 0 1-1.5 1.5H5.25a1.5 1.5 0 0 1-1.5-1.5V8.25a1.5 1.5 0 0 1 1.5-1.5h5.25a.75.75 0 0 0 0-1.5H5.25Z' />
-              </svg>
             </Button>
           ) : (
             <div className='flex gap-2'>
@@ -307,7 +377,7 @@ const EventDetails = () => {
               </Button>
               <Button
                 onClick={() => setIsEditing(false)}
-                className='hover:bg-muted-foreground bg-accent-foreground text-white'
+                className='bg-red-500 text-white'
               >
                 Discard Changes
               </Button>

@@ -6,6 +6,9 @@ const nodemailer = require('nodemailer');
 const { ObjectId } = require('mongodb');
 require('dotenv').config();
 
+const EMAIL = "eventify.xyz@gmail.com"
+const EMAIL_APP_PASSWORD = "uhhvysdwmltbfvzi"
+
 const url =
   'mongodb+srv://alvinalexabraham:root@clusterteam27.uhyq1.mongodb.net/COP4331Cards?retryWrites=true&w=majority&appName=ClusterTeam27';
 const client = new MongoClient(url);
@@ -24,8 +27,8 @@ app.use(bodyParser.urlencoded({ limit: '10mb', extended: true })); // For URL-en
 const transporter = nodemailer.createTransport({
   service: 'gmail',
   auth: {
-    user: process.env.EMAIL,
-    pass: process.env.EMAIL_APP_PASSWORD,
+    user: EMAIL,
+    pass: EMAIL_APP_PASSWORD,
   },
 });
 
@@ -264,7 +267,7 @@ app.post('/api/events/:id/invite', async (req, res) => {
 
     // Send the email invite
     await transporter.sendMail({
-      from: process.env.EMAIL,
+      from: EMAIL,
       to: recipientEmail,
       subject: `You're invited to: ${event.title}`,
       text: `You are invited to the event "${event.title}".\nDate: ${event.date}\nLocation: ${event.location}\nDetails: ${event.description}`,
@@ -284,30 +287,39 @@ app.post('/api/events/:id/notify-update', async (req, res) => {
   const eventId = req.params.id;
   try {
     const db = client.db('LargeProjectTeam27');
+
+    // Fetch the event
     const event = await db
       .collection('Events')
-      .findOne({ _id: ObjectId(eventId) });
+      .findOne({ _id: new ObjectId(eventId) });
+    if (!event) {
+      return res.status(404).json({ error: 'Event not found' });
+    }
+
+    // Fetch attendees from the `sharedWith` field
     const attendees = await db
-      .collection('EventResponses')
-      .find({ eventId })
+      .collection('Users')
+      .find({ _id: { $in: event.sharedWith.map((id) => new ObjectId(id)) } })
       .toArray();
 
+    // Send notifications to each attendee
     for (let attendee of attendees) {
-      const user = await db
-        .collection('Users')
-        .findOne({ _id: ObjectId(attendee.userId) });
-      if (user) {
+      if (attendee.email) {
         await transporter.sendMail({
-          from: process.env.EMAIL,
-          to: user.email,
+          from: EMAIL,
+          to: attendee.email,
           subject: `Update for event: ${event.title}`,
-          text: `The event "${event.title}" has updates.\nNew Details:\n${event.description}\nDate: ${event.date}\nLocation: ${event.location}\n`,
+          text: `The event "${event.title}" has updates.\n\nNew Details:\n${event.description}\nDate: ${new Date(
+            event.date
+          ).toLocaleString()}\nLocation: ${event.location}`,
         });
       }
     }
+
     res.status(200).json({ message: 'Update notifications sent' });
-  } catch (e) {
-    res.status(500).json({ error: e.toString() });
+  } catch (error) {
+    console.error('Error sending update notifications:', error);
+    res.status(500).json({ error: error.message });
   }
 });
 
@@ -369,11 +381,9 @@ app.get('/api/events', async (req, res) => {
       filter.date = { $lt: new Date() }; // Past events
     } else if (dateFilter) {
       // Assume dateFilter is a specific date (e.g., '2024-12-02')
-      const startOfDay = new Date(dateFilter);
-      startOfDay.setHours(0, 0, 0, 0);
-
-      const endOfDay = new Date(dateFilter);
-      endOfDay.setHours(23, 59, 59, 999);
+      // Convert dateFilter to a Date object at UTC midnight
+      const startOfDay = new Date(`${dateFilter}T00:00:00Z`);
+      const endOfDay = new Date(`${dateFilter}T23:59:59Z`);
 
       filter.date = { $gte: startOfDay, $lte: endOfDay }; // Events within the specified day
     }
