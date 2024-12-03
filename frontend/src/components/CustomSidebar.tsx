@@ -142,15 +142,15 @@ function CustomSidebar() {
       </SidebarContent>
 
       {/* Footer */}
-      <SidebarFooter className='px-4 py-3 border-t border-gray-600'>
-        <div className='flex flex-row items-start gap-4'>
+      <SidebarFooter className='px-2 py-3 border-t border-gray-600'>
+        <div className='flex flex-row items-start gap-2'>
           <div className='flex flex-col'>
             <p className='text-lg font-semibold'>{user.username || 'Guest'}</p>
             <p className='text-sm'>{user.email || 'No email available'}</p>
           </div>
           <Button
             onClick={handleLogout}
-            className='mt-4 bg-muted-foreground-600 hover:bg-muted-foreground-700 text-white px-2 py-2 rounded-lg'
+            className='mt-4 bg-muted-foreground-600 hover:bg-muted-foreground-700 text-white px-1 py-1 rounded-lg'
           >
             Logout
           </Button>

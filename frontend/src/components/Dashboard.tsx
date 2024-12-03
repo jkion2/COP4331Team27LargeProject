@@ -280,7 +280,7 @@ function Dashboard() {
         </div>
 
         {/* Tab Content */}
-        <div className='p-4 bg-white border rounded shadow w-full'>
+        <div className='p-2 bg-transparent rounded w-full'>
           {renderContent()}
         </div>
       </div>
@@ -291,7 +291,7 @@ function Dashboard() {
         {/* New Event Button */}
         <Dialog>
           <DialogTrigger asChild>
-            <Button className='flex flex-row w-1/2 gap-6 bg-[#4d1a1c] text-white py-2 px-10 font-normal rounded-2xl shadow-md h-14 text-2xl hover:bg-[#672325]'>
+            <Button className='flex flex-row w-52 gap-6 bg-[#4d1a1c] text-white py-2 px-12 font-normal rounded-2xl shadow-md h-14 text-2xl hover:bg-[#672325]'>
               <svg
                 xmlns='http://www.w3.org/2000/svg'
                 viewBox='0 0 24 24'
