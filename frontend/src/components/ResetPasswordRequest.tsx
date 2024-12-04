@@ -11,7 +11,7 @@ function ResetPasswordRequest() {
     event.preventDefault();
     try {
       const response = await fetch(
-        'https://event-ify/api.xyz/request-password-reset',
+        'https://event-ify.xyz/api/request-password-reset',
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
