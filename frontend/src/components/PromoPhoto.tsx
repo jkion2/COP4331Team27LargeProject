@@ -1,16 +1,16 @@
 import { useState, useEffect } from 'react';
 
 const photos = [
-  'promo1.png',
-  'promo2.png',
-  'promo3.png',
-  'promo4.png',
-  'promo5.png',
-  'promo6.png',
-  'promo7.png',
-  'promo8.png',
-  'promo9.png',
-  'promo10.png',
+  '/promo1.png',
+  '/promo2.png',
+  '/promo3.png',
+  '/promo4.png',
+  '/promo5.png',
+  '/promo6.png',
+  '/promo7.png',
+  '/promo8.png',
+  '/promo9.png',
+  '/promo10.png',
 ];
 
 function PromoPhoto() {

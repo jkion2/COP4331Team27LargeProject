@@ -71,7 +71,7 @@ function Register() {
     const js = JSON.stringify(obj);
 
     try {
-      const response = await fetch('http://event-ify.xyz/api/register', {
+      const response = await fetch('https://event-ify.xyz/api/register', {
         method: 'POST',
         body: js,
         headers: { 'Content-Type': 'application/json' },
@@ -86,9 +86,10 @@ function Register() {
         setMessage('');
         setStep('verify');
       }
-    } catch (error: any) {
-      alert(error.toString());
-      return;
+    } catch (error) {
+      setMessage(
+        error instanceof Error ? error.message : 'An unexpected error occurred.'
+      );
     }
   }
 

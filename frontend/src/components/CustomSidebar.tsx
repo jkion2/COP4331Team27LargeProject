@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import {
   Sidebar,
@@ -44,7 +44,12 @@ function CustomSidebar() {
     setRecentEvents(storedRecents);
   }, [navigate, user]);
 
-  const handleRecentClick = (id) => {
+  interface Event {
+    _id: string;
+    title: string;
+  }
+
+  const handleRecentClick = (id: string) => {
     navigate(`/event/${id}`); // Navigate to the clicked recent event
   };
 
@@ -133,8 +138,6 @@ function CustomSidebar() {
               </SidebarGroup>
             </Collapsible>
           </SidebarMenuItem>
-
-         
         </SidebarMenu>
       </SidebarContent>
 

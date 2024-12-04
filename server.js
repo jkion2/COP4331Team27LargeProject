@@ -6,8 +6,67 @@ const nodemailer = require('nodemailer');
 const { ObjectId } = require('mongodb');
 require('dotenv').config();
 
-const EMAIL = "eventify.xyz@gmail.com"
-const EMAIL_APP_PASSWORD = "uhhvysdwmltbfvzi"
+const EMAIL = 'eventify.xyz@gmail.com';
+const EMAIL_APP_PASSWORD = 'uhhvysdwmltbfvzi';
+
+const emailTemplate = (title, body) => `
+<!DOCTYPE html>
+<html>
+<head>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+      background-color: #f9f9f9;
+      color: #333;
+    }
+    .container {
+      max-width: 600px;
+      margin: 20px auto;
+      background-color: #fff;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      overflow: hidden;
+    }
+    .header {
+      background-color: #CC6C67;
+      color: white;
+      text-align: center;
+      padding: 20px;
+    }
+    .header h1 {
+      font-family: 'Modak', cursive;
+      font-size: 36px;
+      margin: 0;
+    }
+    .content {
+      padding: 20px;
+      text-align: left;
+    }
+    .footer {
+      background-color: #f1f1f1;
+      text-align: center;
+      padding: 15px;
+      font-size: 0.9em;
+      color: #666;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>EVENTIFY</h1>
+    </div>
+    <div class="content">
+      ${body}
+    </div>
+    <div class="footer">
+      <p>Make Plans. Send Invites. Create Memories.</p>
+    </div>
+  </div>
+</body>
+</html>`;
 
 const url =
   'mongodb+srv://alvinalexabraham:root@clusterteam27.uhyq1.mongodb.net/COP4331Cards?retryWrites=true&w=majority&appName=ClusterTeam27';
@@ -19,7 +78,7 @@ client
   .catch((err) => console.error('Error connecting to MongoDB', err));
 
 const app = express();
-app.use(cors({ origin: 'http://event-ify.xyz', credentials: true }));
+app.use(cors({ origin: 'https://event-ify.xyz', credentials: true }));
 
 app.use(bodyParser.json({ limit: '10mb' })); // Increase limit to 10MB
 app.use(bodyParser.urlencoded({ limit: '10mb', extended: true })); // For URL-encoded payloads
@@ -52,10 +111,17 @@ app.post('/api/register', async (req, res) => {
     });
 
     await transporter.sendMail({
-      from: 'your_email@gmail.com',
+      from: EMAIL,
       to: email,
-      subject: 'Email Verification',
-      text: `Your verification code is: ${verificationCode}`,
+      subject: 'Your Verification Code - Eventify',
+      html: emailTemplate(
+        'Email Verification',
+        `<p>Hello ${username},</p>
+     <p>Welcome to Eventify! Your verification code is:</p>
+     <h2 style="text-align: center; color: #CC6C67;">${verificationCode}</h2>
+     <p>Please enter this code in the app to verify your email.</p>
+     <p>If you did not request this, you can safely ignore this email.</p>`
+      ),
     });
 
     res
@@ -85,6 +151,78 @@ app.post('/api/verify-email', async (req, res) => {
     res.status(200).json({ message: 'Email verified successfully' });
   } catch (e) {
     res.status(500).json({ error: e.toString() });
+  }
+});
+
+app.post('/api/request-password-reset', async (req, res) => {
+  const { email } = req.body;
+
+  try {
+    const db = client.db('LargeProjectTeam27');
+    const user = await db.collection('Users').findOne({ email });
+
+    if (!user) {
+      return res
+        .status(200)
+        .json({ message: 'If the account exists, an email will be sent.' }); // Security: Don't reveal if user exists
+    }
+
+    const resetToken = new ObjectId().toString(); // Create a unique token
+    await db.collection('Users').updateOne(
+      { _id: user._id },
+      {
+        $set: { resetToken, resetTokenExpires: new Date(Date.now() + 3600000) },
+      } // 1-hour expiry
+    );
+
+    const resetLink = `https://event-ify.xyz/reset-password/${resetToken}`;
+
+    await transporter.sendMail({
+      from: EMAIL,
+      to: email,
+      subject: 'Reset Your Password - Eventify',
+      html: emailTemplate(
+        'Reset Your Password',
+        `<p>Hi there,</p>
+    <p>We received a request to reset your password for your Eventify account.</p>
+    <p>If this was you, click the button below to reset your password:</p>
+    <a href="${resetLink}" class="button">Reset Password</a>
+    <p>If you did not request this, you can ignore this email and your password will remain unchanged.</p>`,
+        '<p>Need help? <a href="mailto:support@event-ify.xyz">Contact Support</a></p>'
+      ),
+    });
+
+    res.status(200).json({ message: 'Email sent.' });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.post('/api/reset-password', async (req, res) => {
+  const { resetToken, newPassword } = req.body;
+
+  try {
+    const db = client.db('LargeProjectTeam27');
+    const user = await db.collection('Users').findOne({
+      resetToken,
+      resetTokenExpires: { $gte: new Date() },
+    });
+
+    if (!user) {
+      return res.status(400).json({ error: 'Invalid or expired token.' });
+    }
+
+    await db.collection('Users').updateOne(
+      { _id: user._id },
+      {
+        $set: { password: newPassword },
+        $unset: { resetToken: '', resetTokenExpires: '' },
+      }
+    );
+
+    res.status(200).json({ message: 'Password reset successfully.' });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
   }
 });
 
@@ -266,12 +404,24 @@ app.post('/api/events/:id/invite', async (req, res) => {
       { $addToSet: { sharedWith: recipient._id.toString() } } // Ensure no duplicates
     );
 
-    // Send the email invite
     await transporter.sendMail({
       from: EMAIL,
       to: recipientEmail,
-      subject: `You're invited to: ${event.title}`,
-      text: `You are invited to the event "${event.title}".\nDate: ${event.date}\nLocation: ${event.location}\nDetails: ${event.description}`,
+      subject: `You're Invited to: ${event.title} - Eventify`,
+      html: emailTemplate(
+        `You're Invited!`,
+        `<p>Hello,</p>
+     <p>You have been invited to an event on Eventify:</p>
+     <p><strong>Event:</strong> ${event.title}</p>
+     <p><strong>Date:</strong> ${new Date(event.date).toLocaleString()}</p>
+     <p><strong>Location:</strong> ${event.location}</p>
+     <p><strong>Details:</strong> ${event.description}</p>
+     <p>We hope to see you there! Click the button below to view the event page:</p>
+     <a href="https://event-ify.xyz/event/${
+       event._id
+     }" style="display: inline-block; padding: 10px 20px; background-color: #CC6C67; color: white; text-decoration: none; border-radius: 5px; margin-top: 10px;">View Event</a>
+     <p>Make Plans. Send Invites. Create Memories.</p>`
+      ),
     });
 
     res
@@ -309,10 +459,21 @@ app.post('/api/events/:id/notify-update', async (req, res) => {
         await transporter.sendMail({
           from: EMAIL,
           to: attendee.email,
-          subject: `Update for event: ${event.title}`,
-          text: `The event "${event.title}" has updates.\n\nNew Details:\n${event.description}\nDate: ${new Date(
-            event.date
-          ).toLocaleString()}\nLocation: ${event.location}`,
+          subject: `Updated Details for: ${event.title} - Eventify`,
+          html: emailTemplate(
+            `Event Update`,
+            `<p>Hello,</p>
+     <p>The event <strong>${event.title}</strong> has been updated:</p>
+     <p><strong>New Date:</strong> ${new Date(event.date).toLocaleString()}</p>
+     <p><strong>New Location:</strong> ${event.location}</p>
+     <p><strong>Details:</strong> ${event.description}</p>
+     <p>Click the button below to view the updated event page:</p>
+     <a href="https://event-ify.xyz/event/${
+       event._id
+     }" style="display: inline-block; padding: 10px 20px; background-color: #CC6C67; color: white; text-decoration: none; border-radius: 5px; margin-top: 10px;">View Event</a>
+     <p>We look forward to seeing you there!</p>
+     <p>Make Plans. Send Invites. Create Memories.</p>`
+          ),
         });
       }
     }
@@ -437,4 +598,4 @@ app.post('/api/events/reminder', async (req, res) => {
   }
 });
 
-app.listen(80, () => console.log('Server is running on port 80'));
+app.listen(3000, () => console.log('Server is running on port 3000'));

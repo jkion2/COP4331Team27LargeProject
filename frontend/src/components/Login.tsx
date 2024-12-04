@@ -10,13 +10,13 @@ function Login() {
   const [loginPassword, setPassword] = React.useState('');
   const [showPassword, setShowPassword] = useState(false); // State for toggling password visibility
 
-  async function doLogin(event: any): Promise<void> {
+  async function doLogin(event: React.FormEvent): Promise<void> {
     event.preventDefault();
     const obj = { email: loginEmail, password: loginPassword };
     const js = JSON.stringify(obj);
 
     try {
-      const response = await fetch('http://event-ify.xyz/api/login', {
+      const response = await fetch('https://event-ify.xyz/api/login', {
         method: 'POST',
         body: js,
         headers: { 'Content-Type': 'application/json' },
@@ -31,17 +31,18 @@ function Login() {
         setMessage('');
         window.location.href = '/dashboard';
       }
-    } catch (error: any) {
-      alert(error.toString());
-      return;
+    } catch (error) {
+      setMessage(
+        error instanceof Error ? error.message : 'An unexpected error occurred.'
+      );
     }
   }
 
-  function handleSetLoginEmail(e: any): void {
+  function handleSetLoginEmail(e: React.ChangeEvent<HTMLInputElement>): void {
     setLoginEmail(e.target.value);
   }
 
-  function handleSetPassword(e: any): void {
+  function handleSetPassword(e: React.ChangeEvent<HTMLInputElement>): void {
     setPassword(e.target.value);
   }
 
@@ -92,7 +93,9 @@ function Login() {
           </button>
         </div>
         <h2 className='mb-6 text-sm sm:text-base text-[#B74B4B] text-center'>
-          Forgot password?
+          <Link to='/reset-password' className='hover:text-[#6E2D33]'>
+            Forgot password?
+          </Link>
         </h2>
         <Button
           type='submit'

@@ -43,7 +43,7 @@ function VerifyEmail({ userId, email }: { userId: string; email: string }) {
     }
 
     try {
-      const response = await fetch('http://event-ify.xyz/api/verify-email', {
+      const response = await fetch('https://event-ify.xyz/api/verify-email', {
         method: 'POST',
         body: JSON.stringify({ userId, verificationCode }),
         headers: { 'Content-Type': 'application/json' },
@@ -58,8 +58,12 @@ function VerifyEmail({ userId, email }: { userId: string; email: string }) {
         setMessage('Email verified successfully!');
         setIsSuccess(true);
       }
-    } catch (error: any) {
-      alert(error.toString());
+    } catch (error) {
+      // Explicitly type error or use it safely
+      setMessage(
+        error instanceof Error ? error.message : 'An unexpected error occurred.'
+      );
+      setIsSuccess(false);
     }
   };
 

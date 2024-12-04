@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { ScrollArea } from './ui/scroll-area';
 import EventCard from './EventCard';
 
@@ -22,7 +22,7 @@ const DayView = ({ date }) => {
       try {
         setLoading(true);
         const response = await fetch(
-          `http://localhost:3000/api/events?userId=${user.id}&dateFilter=${date}`
+          `https://event-ify.xyz/api/events?userId=${user.id}&dateFilter=${date}`
         );
 
         if (!response.ok) {

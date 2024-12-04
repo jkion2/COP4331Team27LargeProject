@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ScrollArea } from './ui/scroll-area';
 import { toast, Toaster } from 'sonner';
@@ -18,16 +18,38 @@ import { Input } from './ui/input';
 const EventDetails = () => {
   const { eventId } = useParams();
   const navigate = useNavigate();
-  const [event, setEvent] = useState(null);
+  const [event, setEvent] = useState<{
+    title?: string;
+    description?: string;
+    date?: string;
+    location?: string;
+    image?: string;
+    attendees?: { email: string }[];
+    organizer?: { _id: string; username?: string };
+  } | null>(null);
   const [isEditing, setIsEditing] = useState(false);
-  const [editedEvent, setEditedEvent] = useState({});
+  const [editedEvent, setEditedEvent] = useState<{
+    title?: string;
+    description?: string;
+    date?: string;
+    location?: string;
+    image?: string;
+    attendees?: { email: string }[];
+  }>({
+    title: '',
+    description: '',
+    date: '',
+    location: '',
+    image: '',
+    attendees: [],
+  });
   const [currentEmail, setCurrentEmail] = useState('');
 
   useEffect(() => {
     const fetchEvent = async () => {
       try {
         const response = await fetch(
-          `http://localhost:3000/api/events?eventId=${eventId}`
+          `https://event-ify.xyz/api/events?eventId=${eventId}`
         );
         if (!response.ok) throw new Error('Failed to fetch event details');
 
@@ -44,10 +66,10 @@ const EventDetails = () => {
 
   const user = JSON.parse(localStorage.getItem('user_data') || '{}');
 
-  const handleAddAttendee = async (email) => {
+  const handleAddAttendee = async (email: string) => {
     try {
       const response = await fetch(
-        `http://localhost:3000/api/events/${eventId}/invite`,
+        `https://event-ify.xyz/api/events/${eventId}/invite`,
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -57,7 +79,6 @@ const EventDetails = () => {
 
       if (!response.ok) throw new Error(`Failed to invite ${email}`);
 
-      const result = await response.json();
       toast.success(`Invite sent to ${email}`, {
         style: { color: '#065f46', border: '1px solid #10b981' },
       });
@@ -79,7 +100,7 @@ const EventDetails = () => {
     try {
       // Update the event
       const updateResponse = await fetch(
-        `http://localhost:3000/api/events/${eventId}/edit`,
+        `https://event-ify.xyz/api/events/${eventId}/edit`,
         {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
@@ -98,7 +119,7 @@ const EventDetails = () => {
 
       // Notify attendees about the update
       const notifyResponse = await fetch(
-        `http://localhost:3000/api/events/${eventId}/notify-update`,
+        `https://event-ify.xyz/api/events/${eventId}/notify-update`,
         {
           method: 'POST',
         }
@@ -120,11 +141,10 @@ const EventDetails = () => {
     }
   };
 
-
   const handleDelete = async () => {
     try {
       const response = await fetch(
-        `http://localhost:3000/api/events/${eventId}/delete`,
+        `https://event-ify.xyz/api/events/${eventId}/delete`,
         {
           method: 'DELETE',
         }
@@ -162,10 +182,14 @@ const EventDetails = () => {
             type='file'
             accept='image/*'
             onChange={async (e) => {
-              const file = e.target.files[0];
-              if (file) {
+              if (e.target.files && e.target.files[0]) {
+                const file = e.target.files[0];
                 const base64Image = await toBase64(file);
-                setEditedEvent((prev) => ({ ...prev, image: base64Image }));
+
+                // Ensure `base64Image` is a string or undefined (filter out `null` and `ArrayBuffer`)
+                if (typeof base64Image === 'string') {
+                  setEditedEvent((prev) => ({ ...prev, image: base64Image }));
+                }
               }
             }}
           />
@@ -230,10 +254,12 @@ const EventDetails = () => {
             ) : (
               <>
                 <p className='text-lg'>
-                  <strong>Date:</strong> {new Date(date).toLocaleDateString()}
+                  <strong>Date:</strong>{' '}
+                  {date ? new Date(date).toLocaleDateString() : 'Not specified'}
                 </p>
                 <p className='text-lg'>
-                  <strong>Time:</strong> {new Date(date).toLocaleTimeString()}
+                  <strong>Time:</strong>{' '}
+                  {date ? new Date(date).toLocaleTimeString() : 'Not specified'}
                 </p>
               </>
             )}
@@ -330,9 +356,10 @@ const EventDetails = () => {
                       onClick={() =>
                         setEditedEvent((prev) => ({
                           ...prev,
-                          attendees: prev.attendees.filter(
-                            (a) => a.email !== attendee.email
-                          ),
+                          attendees:
+                            prev.attendees?.filter(
+                              (a) => a.email !== attendee.email
+                            ) || [], // Ensure attendees is not undefined
                         }))
                       }
                     >
@@ -427,7 +454,7 @@ const EventDetails = () => {
   );
 };
 
-function toBase64(file) {
+function toBase64(file: File): Promise<string | ArrayBuffer | null> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.readAsDataURL(file);
