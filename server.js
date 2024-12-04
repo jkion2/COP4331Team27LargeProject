@@ -13,6 +13,7 @@ const emailTemplate = (title, body) => `
 <!DOCTYPE html>
 <html>
 <head>
+  <link href="https://fonts.googleapis.com/css2?family=Modak&display=swap" rel="stylesheet">
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -33,23 +34,30 @@ const emailTemplate = (title, body) => `
       background-color: #CC6C67;
       color: white;
       text-align: center;
-      padding: 20px;
+      padding: 30px;
     }
     .header h1 {
       font-family: 'Modak', cursive;
-      font-size: 36px;
+      font-size: 42px; /* Increased font size */
       margin: 0;
+      font-weight: bold; /* Make it bolder */
     }
     .content {
-      padding: 20px;
+      padding: 25px; /* Increased padding for more spacing */
       text-align: left;
+      font-size: 16px; /* Increased base font size */
+      line-height: 1.6; /* Improved readability */
+    }
+    .content p {
+      margin: 15px 0;
     }
     .footer {
       background-color: #f1f1f1;
       text-align: center;
-      padding: 15px;
-      font-size: 0.9em;
-      color: #666;
+      padding: 20px; /* Increased padding */
+      font-size: 1rem; /* Slightly larger font size */
+      color: #98383B; /* Footer text color change */
+      font-weight: bold; /* Footer text is bolder */
     }
   </style>
 </head>
@@ -420,7 +428,7 @@ app.post('/api/events/:id/invite', async (req, res) => {
      <a href="https://event-ify.xyz/event/${
        event._id
      }" style="display: inline-block; padding: 10px 20px; background-color: #CC6C67; color: white; text-decoration: none; border-radius: 5px; margin-top: 10px;">View Event</a>
-     <p>Make Plans. Send Invites. Create Memories.</p>`
+     `
       ),
     });
 
@@ -472,7 +480,7 @@ app.post('/api/events/:id/notify-update', async (req, res) => {
        event._id
      }" style="display: inline-block; padding: 10px 20px; background-color: #CC6C67; color: white; text-decoration: none; border-radius: 5px; margin-top: 10px;">View Event</a>
      <p>We look forward to seeing you there!</p>
-     <p>Make Plans. Send Invites. Create Memories.</p>`
+     `
           ),
         });
       }
