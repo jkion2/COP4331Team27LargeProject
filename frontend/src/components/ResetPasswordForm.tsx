@@ -1,4 +1,4 @@
-import  { useState } from 'react';
+import { useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { Input } from './ui/input';
 import { Button } from './ui/button';
@@ -34,7 +34,7 @@ function ResetPasswordForm() {
     }
 
     try {
-      const response = await fetch('https://event-ify/api/reset-password', {
+      const response = await fetch('https://event-ify.xyz/api/reset-password', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ resetToken, newPassword }),
