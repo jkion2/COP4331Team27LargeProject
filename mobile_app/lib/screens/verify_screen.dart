@@ -1,138 +1,179 @@
 import 'package:flutter/material.dart';
+import '../Services/api_service.dart';
+import 'reset_password_screen.dart'; // Import LoginScreen
+import 'login_screen.dart';
+class VerifyScreen extends StatefulWidget {
+  final String email;
+  final bool isPasswordReset;
 
-class VerifyScreen extends StatelessWidget {
+  VerifyScreen({required this.email, this.isPasswordReset = false});
+
+  @override
+  _VerifyScreenState createState() => _VerifyScreenState(); // Add this line
+}
+
+ createState() => _VerifyScreenState();
+
+
+class _VerifyScreenState extends State<VerifyScreen> {
+  final _codeController = TextEditingController();
+  final _formKey = GlobalKey<FormState>();
+  final ApiService _apiService = ApiService();
+
+  void _submitVerification() async {
+    if (_formKey.currentState!.validate()) {
+      String code = _codeController.text.trim();
+
+      try {
+        // Call the verify-email API with the appropriate type
+        await _apiService.verifyResetCode(
+          widget.email,
+          code,
+        );
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Code verified successfully!')),
+        );
+
+        if (widget.isPasswordReset) {
+          // Navigate to ResetPasswordScreen for password reset
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => ResetPasswordScreen(
+                email: widget.email,
+                verificationCode: code, // Pass the verified code
+              ),
+            ),
+          );
+        } else {
+          // For regular email verification, go to LoginScreen
+          Navigator.pushAndRemoveUntil(
+            context,
+            MaterialPageRoute(builder: (context) => LoginScreen()),
+                (route) => false,
+          );
+        }
+      } catch (error) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error: ${error.toString()}')),
+        );
+      }
+    }
+  }
+
+
+  void _resendCode() {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text("Verification code resent to ${widget.email}."),
+        backgroundColor: Colors.blue,
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: SafeArea(
-        child: Container(
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              colors: [Colors.deepPurpleAccent, Colors.pinkAccent],
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-            ),
-          ),
-          child: Center(
-            child: Padding(
-              padding: const EdgeInsets.all(20.0),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  SizedBox(height: 100),
-                  _buildHeader(),
-                  SizedBox(height: 60),
-                  _buildVerificationForm(context),
-                ],
-              ),
+      backgroundColor: Colors.white,
+      appBar: AppBar(
+        title: Text("Verify Email"),
+        backgroundColor: Colors.red[700],
+      ),
+      body: Center(
+        child: SingleChildScrollView(
+          padding: EdgeInsets.symmetric(horizontal: 24),
+          child: Form(
+            key: _formKey,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                Text(
+                  "EVENTIFY",
+                  style: TextStyle(
+                    fontFamily: 'Roboto',
+                    fontSize: 32,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.red[700],
+                  ),
+                ),
+                SizedBox(height: 16),
+                Text(
+                  "Verify Your Email",
+                  style: TextStyle(
+                    fontSize: 24,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.black,
+                  ),
+                ),
+                SizedBox(height: 16),
+                Text(
+                  "Enter the verification code sent to your email.",
+                  style: TextStyle(fontSize: 16, color: Colors.black),
+                ),
+                SizedBox(height: 24),
+                TextFormField(
+                  controller: _codeController,
+                  decoration: InputDecoration(
+                    labelText: "Verification Code",
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    filled: true,
+                    fillColor: Colors.grey[200],
+                    contentPadding: EdgeInsets.symmetric(
+                      vertical: 16,
+                      horizontal: 16,
+                    ),
+                  ),
+                  keyboardType: TextInputType.number,
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return "Please enter the verification code";
+                    } else if (value.length != 6) {
+                      return "Code must be 6 digits";
+                    }
+                    return null;
+                  },
+                ),
+                SizedBox(height: 24),
+                ElevatedButton(
+                  onPressed: _submitVerification,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.red[700],
+                    padding: EdgeInsets.symmetric(vertical: 16),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    minimumSize: Size(double.infinity, 48),
+                  ),
+                  child: Text(
+                    "Verify",
+                    style: TextStyle(fontSize: 16, color: Colors.white),
+                  ),
+                ),
+                SizedBox(height: 24),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      "Didn’t receive the code?",
+                      style: TextStyle(color: Colors.black),
+                    ),
+                    TextButton(
+                      onPressed: _resendCode,
+                      child: Text(
+                        "Resend",
+                        style: TextStyle(color: Colors.red[700]),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
             ),
           ),
         ),
       ),
-    );
-  }
-
-  Widget _buildHeader() {
-    return Center(
-      child: Text(
-        'EVENTIFY',
-        style: TextStyle(
-          fontSize: 42,
-          fontWeight: FontWeight.bold,
-          color: Colors.white,
-          letterSpacing: 2.0,
-          shadows: [
-            Shadow(
-              color: Colors.black26,
-              offset: Offset(2, 2),
-              blurRadius: 10,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildVerificationForm(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          'Verify Your Email',
-          style: TextStyle(
-            fontSize: 24,
-            fontWeight: FontWeight.bold,
-            color: Colors.white,
-          ),
-        ),
-        SizedBox(height: 10),
-        Text(
-          'Enter the 6-digit code sent to your email.',
-          style: TextStyle(color: Colors.white70),
-        ),
-        SizedBox(height: 20),
-        _buildCodeInputFields(),
-        SizedBox(height: 20),
-        Center(
-          child: ElevatedButton(
-            onPressed: () {
-              // Verification logic goes here
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.deepOrangeAccent,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(10.0),
-              ),
-              padding: EdgeInsets.symmetric(vertical: 15, horizontal: 50),
-              elevation: 10,
-              shadowColor: Colors.deepOrangeAccent.withOpacity(0.5),
-            ),
-            child: Text(
-              'Verify',
-              style: TextStyle(fontSize: 18, color: Colors.white),
-            ),
-          ),
-        ),
-        SizedBox(height: 10),
-        Center(
-          child: TextButton(
-            onPressed: () {
-              // Resend code logic
-            },
-            child: Text(
-              'Resend Code',
-              style: TextStyle(color: Colors.yellowAccent),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildCodeInputFields() {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: List.generate(6, (index) {
-        return SizedBox(
-          width: 40,
-          child: TextField(
-            keyboardType: TextInputType.number,
-            textAlign: TextAlign.center,
-            maxLength: 1,
-            style: TextStyle(color: Colors.white, fontSize: 20),
-            decoration: InputDecoration(
-              counterText: '',
-              filled: true,
-              fillColor: Colors.white.withOpacity(0.1),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(8.0),
-                borderSide: BorderSide.none,
-              ),
-            ),
-          ),
-        );
-      }),
     );
   }
 }

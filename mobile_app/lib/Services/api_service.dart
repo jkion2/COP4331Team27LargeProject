@@ -1,213 +1,337 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
+import '../screens/eventDashboard_screen.dart';
+
 
 class ApiService {
-  static const String _baseUrl = 'http://10.0.2.2:5000/api'; // For Android emulator, use http://localhost:5000 for iOS Simulator/real devices
+  final String baseUrl = "http://event-ify.xyz:3000/api";
 
-  // Login User
-  static Future<Map<String, dynamic>> loginUser(String login, String password) async {
+  // User Management
+
+  // Login
+  Future<Map<String, dynamic>> login(String email, String password) async {
     final response = await http.post(
-      Uri.parse('$_baseUrl/login'),
+      Uri.parse('$baseUrl/login'),
       headers: {'Content-Type': 'application/json'},
-      body: jsonEncode({'login': login, 'password': password}),
+      body: jsonEncode({'email': email, 'password': password}),
     );
 
     if (response.statusCode == 200) {
-      return jsonDecode(response.body); // Return user data
-    } else if (response.statusCode == 401 || response.statusCode == 403) {
-      throw Exception(jsonDecode(response.body)['error']); // Return server error message
+      final data = jsonDecode(response.body);
+
+      // Save userId and username in shared preferences
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('userId', data['user']['id']);
+      await prefs.setString('username', data['user']['username']);
+
+      return data;
     } else {
-      throw Exception('Login failed with status code ${response.statusCode}');
+      throw Exception(jsonDecode(response.body)['error']);
     }
   }
 
-  // Register User
-  static Future<Map<String, dynamic>> registerUser(String username, String email, String password) async {
+  // Register
+  Future<Map<String, dynamic>> register(String username, String email,
+      String password) async {
     final response = await http.post(
-      Uri.parse('$_baseUrl/register'),
+      Uri.parse('$baseUrl/register'),
       headers: {'Content-Type': 'application/json'},
-      body: jsonEncode({'username': username, 'email': email, 'password': password}),
+      body: jsonEncode(
+          {'username': username, 'email': email, 'password': password}),
     );
 
     if (response.statusCode == 201) {
-      return jsonDecode(response.body); // Return success response
-    } else if (response.statusCode == 400) {
-      throw Exception(jsonDecode(response.body)['error']); // Handle missing fields or validation errors
+      return jsonDecode(response.body);
     } else {
-      throw Exception('Registration failed with status code ${response.statusCode}');
+      throw Exception(jsonDecode(response.body)['error']);
     }
   }
 
   // Verify Email
-  static Future<Map<String, dynamic>> verifyEmail(String userId, String verificationCode) async {
+  Future<void> verifyEmail(String verificationCode) async {
     final response = await http.post(
-      Uri.parse('$_baseUrl/verify-email'),
+      Uri.parse('$baseUrl/verify-email'),
       headers: {'Content-Type': 'application/json'},
-      body: jsonEncode({'userId': userId, 'verificationCode': verificationCode}),
+      body: jsonEncode({'verificationCode': verificationCode}),
     );
 
-    if (response.statusCode == 200) {
-      return jsonDecode(response.body); // Return success message
-    } else if (response.statusCode == 400) {
-      throw Exception(jsonDecode(response.body)['error']); // Handle invalid verification codes
-    } else {
-      throw Exception('Verification failed with status code ${response.statusCode}');
+    if (response.statusCode != 200) {
+      throw Exception(jsonDecode(response.body)['error']);
     }
   }
 
+  // Add this method to fetch userId or username
+  Future<String?> getUserId() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString('userId');
+  }
+
+  Future<String?> getUsername() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString('username');
+  }
+
+  // Contact Management
+
   // Add Contact
-  static Future<Map<String, dynamic>> addContact(String userId, String name, String email) async {
+  Future<Map<String, dynamic>> addContact(String userId, String name,
+      String email) async {
     final response = await http.post(
-      Uri.parse('$_baseUrl/contacts/add'),
+      Uri.parse('$baseUrl/contacts/add'),
       headers: {'Content-Type': 'application/json'},
       body: jsonEncode({'userId': userId, 'name': name, 'email': email}),
     );
 
     if (response.statusCode == 201) {
-      return jsonDecode(response.body); // Contact added successfully
+      return jsonDecode(response.body);
     } else {
-      throw Exception('Failed to add contact with status code ${response.statusCode}');
+      throw Exception(jsonDecode(response.body)['error']);
     }
   }
 
   // Delete Contact
-  static Future<Map<String, dynamic>> deleteContact(String contactId) async {
+  Future<void> deleteContact(String contactId) async {
     final response = await http.delete(
-      Uri.parse('$_baseUrl/contacts/$contactId/delete'),
+      Uri.parse('$baseUrl/contacts/$contactId/delete'),
       headers: {'Content-Type': 'application/json'},
     );
 
-    if (response.statusCode == 200) {
-      return jsonDecode(response.body); // Contact deleted successfully
-    } else {
-      throw Exception('Failed to delete contact with status code ${response.statusCode}');
+    if (response.statusCode != 200) {
+      throw Exception(jsonDecode(response.body)['error']);
     }
   }
 
   // Edit Contact
-  static Future<Map<String, dynamic>> editContact(String contactId, String name, String email) async {
+  Future<void> editContact(String contactId, String name, String email) async {
     final response = await http.put(
-      Uri.parse('$_baseUrl/contacts/$contactId/edit'),
+      Uri.parse('$baseUrl/contacts/$contactId/edit'),
       headers: {'Content-Type': 'application/json'},
       body: jsonEncode({'name': name, 'email': email}),
     );
 
-    if (response.statusCode == 200) {
-      return jsonDecode(response.body); // Contact updated successfully
-    } else {
-      throw Exception('Failed to edit contact with status code ${response.statusCode}');
+    if (response.statusCode != 200) {
+      throw Exception(jsonDecode(response.body)['error']);
     }
   }
 
   // Search Contacts
-  static Future<List<dynamic>> searchContacts(String userId, String searchQuery) async {
+  Future<List<Map<String, dynamic>>> searchContacts(String userId,
+      String search) async {
     final response = await http.post(
-      Uri.parse('$_baseUrl/contacts/search'),
+      Uri.parse('$baseUrl/contacts/search'),
       headers: {'Content-Type': 'application/json'},
-      body: jsonEncode({'userId': userId, 'search': searchQuery}),
+      body: jsonEncode({'userId': userId, 'search': search}),
     );
 
     if (response.statusCode == 200) {
-      return jsonDecode(response.body); // Return search results
+      return List<Map<String, dynamic>>.from(jsonDecode(response.body));
     } else {
-      throw Exception('Failed to search contacts with status code ${response.statusCode}');
+      throw Exception(jsonDecode(response.body)['error']);
     }
   }
 
+  // Event Management
+
+  // Fetch all or filtered events
+  Future<List<Event>> getEvents() async {
+    final userId = await getUserId();
+
+    final response = await http.get(
+      Uri.parse('$baseUrl/events?userId=$userId'),
+      headers: {'Content-Type': 'application/json'},
+    );
+
+    if (response.statusCode == 200) {
+      final List<dynamic> eventList = jsonDecode(response.body);
+
+      // Map organizer data dynamically from the backend response
+      return eventList.map((event) => Event.fromJson(event)).toList();
+    } else {
+      throw Exception(jsonDecode(response.body)['error']);
+    }
+  }
+
+
+
+
+
   // Create Event
-  static Future<Map<String, dynamic>> createEvent(String title, String description, String date, String organizerId) async {
+  Future<Map<String, dynamic>> createEvent(String title, String description,
+      String date, String organizerId, String location) async {
     final response = await http.post(
-      Uri.parse('$_baseUrl/events/create'),
+      Uri.parse('$baseUrl/events/create'),
       headers: {'Content-Type': 'application/json'},
       body: jsonEncode({
         'title': title,
         'description': description,
         'date': date,
-        'organizerId': organizerId,
+        'organizerId': organizerId, // Correctly maps organizerId
+        'location': location, // Correctly maps location
       }),
     );
 
     if (response.statusCode == 201) {
-      return jsonDecode(response.body); // Event created successfully
+      return jsonDecode(response.body);
     } else {
-      throw Exception('Failed to create event with status code ${response.statusCode}');
+      throw Exception(jsonDecode(response.body)['error']);
     }
   }
 
+
   // Edit Event
-  static Future<Map<String, dynamic>> editEvent(String eventId, String title, String description, String date) async {
+  Future<void> editEvent(String eventId, String title, String description,
+      String date, String location) async {
     final response = await http.put(
-      Uri.parse('$_baseUrl/events/$eventId/edit'),
+      Uri.parse('$baseUrl/events/$eventId/edit'),
       headers: {'Content-Type': 'application/json'},
       body: jsonEncode({
         'title': title,
         'description': description,
         'date': date,
+        'location': location,
       }),
     );
 
-    if (response.statusCode == 200) {
-      return jsonDecode(response.body); // Event updated successfully
-    } else {
-      throw Exception('Failed to edit event with status code ${response.statusCode}');
+    if (response.statusCode != 200) {
+      throw Exception(jsonDecode(response.body)['error']);
     }
   }
 
   // Delete Event
-  static Future<Map<String, dynamic>> deleteEvent(String eventId) async {
+  Future<void> deleteEvent(String eventId) async {
     final response = await http.delete(
-      Uri.parse('$_baseUrl/events/$eventId/delete'),
+      Uri.parse('$baseUrl/events/$eventId/delete'),
       headers: {'Content-Type': 'application/json'},
     );
 
-    if (response.statusCode == 200) {
-      return jsonDecode(response.body); // Event deleted successfully
-    } else {
-      throw Exception('Failed to delete event with status code ${response.statusCode}');
+    if (response.statusCode != 200) {
+      throw Exception(jsonDecode(response.body)['error']);
     }
   }
 
-  // Invite User to Event
-  static Future<Map<String, dynamic>> inviteToEvent(String eventId, String invitedUserId) async {
+  // Invite to Event
+  Future<void> inviteToEvent(String eventId, String invitedUserId) async {
     final response = await http.post(
-      Uri.parse('$_baseUrl/events/$eventId/invite'),
+      Uri.parse('$baseUrl/events/$eventId/invite'),
       headers: {'Content-Type': 'application/json'},
       body: jsonEncode({'invitedUserId': invitedUserId}),
     );
 
-    if (response.statusCode == 200) {
-      return jsonDecode(response.body); // Invitation sent successfully
-    } else {
-      throw Exception('Failed to send invitation with status code ${response.statusCode}');
+    if (response.statusCode != 200) {
+      throw Exception(jsonDecode(response.body)['error']);
     }
   }
+
+// Invite to Event by Email
+  Future<void> inviteToEventByEmail(String eventId,
+      String recipientEmail) async {
+    final response = await http.post(
+      Uri.parse('$baseUrl/events/$eventId/invite'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode(
+          {'recipientEmail': recipientEmail}), // Ensure correct key
+    );
+
+    if (response.statusCode != 200) {
+      throw Exception(jsonDecode(response.body)['error']);
+    }
+  }
+
 
   // Notify Event Update
-  static Future<Map<String, dynamic>> notifyEventUpdate(String eventId) async {
+  Future<void> notifyEventUpdate(String eventId) async {
     final response = await http.post(
-      Uri.parse('$_baseUrl/events/$eventId/notify-update'),
+      Uri.parse('$baseUrl/events/$eventId/notify-update'),
+      headers: {'Content-Type': 'application/json'},
+    );
+
+    if (response.statusCode != 200) {
+      throw Exception(jsonDecode(response.body)['error']);
+    }
+  }
+
+  // Send Event Reminder
+  Future<void> sendEventReminder() async {
+    final response = await http.post(
+      Uri.parse('$baseUrl/events/reminder'),
+      headers: {'Content-Type': 'application/json'},
+    );
+
+    if (response.statusCode != 200) {
+      throw Exception(jsonDecode(response.body)['error']);
+    }
+  }
+// Request password reset
+  Future<void> requestPasswordReset(String email) async {
+    final response = await http.post(
+      Uri.parse('$baseUrl/request-password-reset'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({'email': email}),
+    );
+
+    if (response.statusCode != 200) {
+      throw Exception(jsonDecode(response.body)['error']);
+    }
+  }
+
+// Verify reset code
+  Future<void> verifyResetCode(String email, String resetCode) async {
+    final response = await http.post(
+      Uri.parse('$baseUrl/verify-reset-code'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({'email': email, 'resetCode': resetCode}),
+    );
+
+    if (response.statusCode != 200) {
+      throw Exception(jsonDecode(response.body)['error']);
+    }
+  }
+
+// Reset password
+  Future<void> resetPassword(String email, String resetCode, String newPassword) async {
+    final response = await http.post(
+      Uri.parse('$baseUrl/reset-password'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({
+        'email': email,
+        'resetCode': resetCode,
+        'newPassword': newPassword,
+      }),
+    );
+
+    if (response.statusCode != 200) {
+      throw Exception(jsonDecode(response.body)['error']);
+    }
+  }
+
+
+  Future<Event> getEventById(String eventId) async {
+    final response = await http.get(
+      Uri.parse('$baseUrl/events?eventId=$eventId'),
       headers: {'Content-Type': 'application/json'},
     );
 
     if (response.statusCode == 200) {
-      return jsonDecode(response.body); // Update notifications sent successfully
+      final Map<String, dynamic> eventData = jsonDecode(response.body);
+      return Event.fromJson(eventData); // Parse event data into the Event model.
     } else {
-      throw Exception('Failed to notify update with status code ${response.statusCode}');
+      throw Exception("Failed to fetch event details: ${response.body}");
     }
   }
-
-  // Send Event Reminders
-  static Future<Map<String, dynamic>> sendEventReminder() async {
-    final response = await http.post(
-      Uri.parse('$_baseUrl/events/reminder'),
+  Future<Event> fetchEventDetails(String eventId) async {
+    final response = await http.get(
+      Uri.parse('$baseUrl/events?eventId=$eventId'),
       headers: {'Content-Type': 'application/json'},
     );
 
     if (response.statusCode == 200) {
-      return jsonDecode(response.body); // Reminders sent successfully
+      final eventData = jsonDecode(response.body);
+      return Event.fromJson(eventData);
     } else {
-      throw Exception('Failed to send event reminders with status code ${response.statusCode}');
+      throw Exception("Failed to fetch event details: ${response.body}");
     }
   }
+
+
 }

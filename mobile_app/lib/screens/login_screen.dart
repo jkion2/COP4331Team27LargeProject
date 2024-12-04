@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:mobile_app/Services/api_service.dart'; // Import ApiService
-import 'verify_screen.dart'; // Import VerifyScreen if it’s used for verified users
-import 'signup_screen.dart'; // Import SignupScreen for navigation to signup
+import 'signup_screen.dart'; // Import the SignUpScreen
+import '../Services/api_service.dart'; // Import the ApiService
+import 'eventDashboard_screen.dart'; // Import EventDashboard
+import 'forgot_password_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   @override
@@ -9,187 +10,194 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> {
-  final TextEditingController _loginController = TextEditingController();
-  final TextEditingController _passwordController = TextEditingController();
-  bool _isLoading = false;
+  final _emailController = TextEditingController();
+  final _passwordController = TextEditingController();
+  final _formKey = GlobalKey<FormState>();
+  bool _isPasswordVisible = false;
+  final ApiService _apiService = ApiService(); // Initialize ApiService
 
-  Future<void> _login() async {
-    setState(() {
-      _isLoading = true;
-    });
+  void _submitLogin() async {
+    if (_formKey.currentState!.validate()) {
+      String email = _emailController.text.trim();
+      String password = _passwordController.text.trim();
 
-    try {
-      final result = await ApiService.loginUser(
-        _loginController.text,
-        _passwordController.text,
-      );
+      try {
+        // API call to login
+        final response = await _apiService.login(email, password);
 
-      if (result['id'] != -1) {
-        // Navigate to VerifyScreen if login is successful
-        Navigator.push(
+        // On success, navigate to the dashboard
+        Navigator.pushReplacement(
           context,
-          MaterialPageRoute(builder: (context) => VerifyScreen()),
+          MaterialPageRoute(
+            builder: (context) => EventDashboard(),
+          ),
         );
-      } else {
-        // Show an error message if login failed
+
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(result['error'])),
+          SnackBar(content: Text('Login successful: Welcome ${response['user']['username']}')),
+        );
+      } catch (error) {
+        // Handle login error
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Login failed: $error')),
         );
       }
-    } catch (error) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Login failed: $error')),
-      );
-    } finally {
-      setState(() {
-        _isLoading = false;
-      });
     }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: SafeArea(
-        child: Container(
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              colors: [Colors.deepPurpleAccent, Colors.pinkAccent],
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-            ),
-          ),
-          child: Center(
-            child: Padding(
-              padding: const EdgeInsets.all(20.0),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  SizedBox(height: 100),
-                  _buildHeader(),
-                  SizedBox(height: 60),
-                  _buildLoginForm(context),
-                ],
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
+      backgroundColor: Colors.white,
+      body: Center(
+        child: SingleChildScrollView(
+          padding: EdgeInsets.symmetric(horizontal: 24),
+          child: Form(
+            key: _formKey, // Form validation key
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                Text(
+                  "EVENTIFY",
+                  style: TextStyle(
+                    fontFamily: 'Roboto',
+                    fontSize: 32,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.red[700],
+                  ),
+                ),
+                SizedBox(height: 16),
+                Text(
+                  "Login",
+                  style: TextStyle(
+                    fontSize: 24,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.black,
+                  ),
+                ),
+                SizedBox(height: 24),
+                TextFormField(
+                  controller: _emailController,
+                  decoration: InputDecoration(
+                    labelText: "Email address",
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    filled: true,
+                    fillColor: Colors.grey[200],
+                    contentPadding: EdgeInsets.symmetric(
+                      vertical: 16,
+                      horizontal: 16,
+                    ),
+                  ),
+                  keyboardType: TextInputType.emailAddress,
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return "Please enter your email";
+                    } else if (!RegExp(r'^[^@]+@[^@]+\.[^@]+').hasMatch(value)) {
+                      return "Please enter a valid email";
+                    }
+                    return null;
+                  },
+                ),
+                SizedBox(height: 16),
+                TextFormField(
+                  controller: _passwordController,
+                  decoration: InputDecoration(
+                    labelText: "Password",
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    filled: true,
+                    fillColor: Colors.grey[200],
+                    contentPadding: EdgeInsets.symmetric(
+                      vertical: 16,
+                      horizontal: 16,
+                    ),
+                    suffixIcon: IconButton(
+                      icon: Icon(
+                        _isPasswordVisible
+                            ? Icons.visibility
+                            : Icons.visibility_off,
+                      ),
+                      onPressed: () {
+                        setState(() {
+                          _isPasswordVisible = !_isPasswordVisible;
+                        });
+                      },
+                    ),
+                  ),
+                  obscureText: !_isPasswordVisible,
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return "Please enter your password";
+                    } else if (value.length < 6) {
+                      return "Password must be at least 6 characters";
+                    }
+                    return null;
+                  },
+                ),
+                SizedBox(height: 8),
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: TextButton(
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (context) => ForgotPasswordScreen()),
+                      );
+                    },
+                    child: Text(
+                      "Forgot password?",
+                      style: TextStyle(color: Colors.red[700]),
+                    ),
+                  ),
+                ),
 
-  Widget _buildHeader() {
-    return Center(
-      child: Text(
-        'EVENTIFY',
-        style: TextStyle(
-          fontSize: 42,
-          fontWeight: FontWeight.bold,
-          color: Colors.white,
-          letterSpacing: 2.0,
-          shadows: [
-            Shadow(
-              color: Colors.black26,
-              offset: Offset(2, 2),
-              blurRadius: 10,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildLoginForm(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          'Login to Party!',
-          style: TextStyle(
-            fontSize: 24,
-            fontWeight: FontWeight.bold,
-            color: Colors.white,
-          ),
-        ),
-        SizedBox(height: 10),
-        Row(
-          children: [
-            Text(
-              "Don’t have an account?",
-              style: TextStyle(color: Colors.white70),
-            ),
-            TextButton(
-              onPressed: () {
-                // Navigate to the signup screen
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => SignupScreen()),
-                );
-              },
-              child: Text(
-                'Sign Up',
-                style: TextStyle(color: Colors.yellowAccent),
-              ),
-            ),
-          ],
-        ),
-        SizedBox(height: 20),
-        _buildTextField('Username', Icons.person, controller: _loginController),
-        SizedBox(height: 20),
-        _buildTextField('Password', Icons.lock, controller: _passwordController, obscureText: true),
-        SizedBox(height: 10),
-        Align(
-          alignment: Alignment.centerRight,
-          child: TextButton(
-            onPressed: () {
-              // Forgot password functionality
-            },
-            child: Text(
-              'Forgot password?',
-              style: TextStyle(color: Colors.yellowAccent),
+                SizedBox(height: 24),
+                ElevatedButton(
+                  onPressed: _submitLogin,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.red[700],
+                    padding: EdgeInsets.symmetric(vertical: 16),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    minimumSize: Size(double.infinity, 48),
+                  ),
+                  child: Text(
+                    "Login",
+                    style: TextStyle(fontSize: 16, color: Colors.white),
+                  ),
+                ),
+                SizedBox(height: 24),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      "Don’t have an account?",
+                      style: TextStyle(color: Colors.black),
+                    ),
+                    TextButton(
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => SignUpScreen(),
+                          ),
+                        );
+                      },
+                      child: Text(
+                        "Sign Up",
+                        style: TextStyle(color: Colors.red[700]),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
             ),
           ),
-        ),
-        SizedBox(height: 20),
-        Center(
-          child: _isLoading
-              ? CircularProgressIndicator()
-              : ElevatedButton(
-            onPressed: _login,
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.deepOrangeAccent,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(10.0),
-              ),
-              padding: EdgeInsets.symmetric(vertical: 15, horizontal: 50),
-              elevation: 10,
-              shadowColor: Colors.deepOrangeAccent.withOpacity(0.5),
-            ),
-            child: Text(
-              'Login',
-              style: TextStyle(fontSize: 18, color: Colors.white),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildTextField(String label, IconData icon, {required TextEditingController controller, bool obscureText = false}) {
-    return TextFormField(
-      controller: controller,
-      obscureText: obscureText,
-      style: TextStyle(color: Colors.white),
-      decoration: InputDecoration(
-        labelText: label,
-        labelStyle: TextStyle(color: Colors.white70),
-        prefixIcon: Icon(icon, color: Colors.white70),
-        filled: true,
-        fillColor: Colors.white.withOpacity(0.1),
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12.0),
-          borderSide: BorderSide.none,
         ),
       ),
     );

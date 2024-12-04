@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
 import 'screens/login_screen.dart'; // Import the LoginScreen
+import 'screens/verify_screen.dart';
 
 void main() {
   runApp(EventifyApp());
 }
 
-class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+class EventifyApp extends StatelessWidget {
+  const EventifyApp({super.key});
 
   @override
   Widget build(BuildContext context) {
