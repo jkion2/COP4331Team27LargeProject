@@ -1,4 +1,4 @@
-# COP4331Team27LargeProject
+# Event-ify.xyz
 
 Login page:
 username or email
